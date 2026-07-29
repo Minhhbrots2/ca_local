@@ -1348,11 +1348,11 @@ function default_open_permiss(){
 	}
 	// $clsISO->print_pre($permiss_mod); die();
 	$field = "{$clsPermiss->pkey},title,code";
-	$list_permiss = $clsPermiss->getAll("`parent_id`=0 and `profile_type`='{$profile_type}' order by `order_no` ASC", $field);
+	$list_permiss = $clsPermiss->getAll("`parent_id`=0 and `profile_type`='{$profile_type}' and `is_active`=1 order by `order_no` ASC", $field);
 	if(!empty($list_permiss)){
 		foreach($list_permiss as $key => $val){
 			$parent_id = $val[$clsPermiss->pkey];
-			$list_items = $clsPermiss->getAll("`parent_id`='{$parent_id}' and `profile_type`='{$profile_type}' 
+			$list_items = $clsPermiss->getAll("`parent_id`='{$parent_id}' and `profile_type`='{$profile_type}' and `is_active`=1 
 			order by `order_no` ASC", $field);
 			if(!empty($list_items)){
 				foreach($list_items as $okey => $oval){
@@ -1392,10 +1392,11 @@ function default_pop_save_permiss(){
 	$more_information = $oProfile['more_information'];
 	$permiss_mod_old = $clsISO->to_array_json($permiss_mod_old);
 	$more_information = $clsISO->to_array_json($more_information);
+	$__hidden_codes = $clsPermiss->getHiddenCodes('user.fh'); // chua quyen an (is_active=0), khong tat nham khi luu
 	if(!empty($permiss_mod_old)){
 		foreach($permiss_mod_old as $okey => $oval){
 			if(!isset($permiss_mod[$okey])){
-				$permiss_mod[$okey] = 0;
+				$permiss_mod[$okey] = in_array($okey, $__hidden_codes) ? $oval : 0;
 			}
 		}
 	}
@@ -1733,21 +1734,52 @@ function _profile_import_http_get($url){
 	$data = @file_get_contents($url, false, $ctx);
 	return ($data !== false) ? $data : '';
 }
-#- Parse chuỗi CSV -> mảng dòng (fgetcsv xử lý ô có dấu phẩy/xuống dòng trong ngoặc kép)
+#- Parse chuỗi CSV -> mảng dòng (fgetcsv xử lý ô có dấu phẩy/xuống dòng trong ngoặc kép).
+#- Dùng php://temp thay tempnam(): stream tự huỷ khi fclose/kết thúc script, nên lúc tiến trình bị
+#- kill giữa chừng cũng không để lại file rác trong /tmp (thư mục này còn đang chứa session).
 function _profile_import_parse_csv($csv){
 	$rows = array();
-	$tmp = tempnam(sys_get_temp_dir(), 'gs');
-	if($tmp === false) return $rows;
-	file_put_contents($tmp, $csv);
-	$h = fopen($tmp, 'r');
-	if($h !== false){
-		while(($data = fgetcsv($h, 0, ',')) !== false){
-			$rows[] = $data;
-		}
-		fclose($h);
+	$mem_limit_byte = 8 * 1024 * 1024; // giữ trong RAM tới ngưỡng này, vượt thì PHP tự tràn ra file tạm
+	$h = fopen('php://temp/maxmemory:'.$mem_limit_byte, 'r+');
+	if($h === false) return $rows;
+	fwrite($h, $csv);
+	rewind($h);
+	while(($data = fgetcsv($h, 0, ',')) !== false){
+		$rows[] = $data;
 	}
-	@unlink($tmp);
+	fclose($h);
 	return $rows;
+}
+#- Nạp 1 lần quan hệ cha-con của bảng property (id => parent_id) + đánh dấu id nào là phòng ban.
+#- Thay cho Property::getListParent() trong vòng lặp import: hàm đó SELECT * cả bảng phòng ban rồi
+#- đệ quy 1 query/cấp cho MỖI dòng -> đủ để LiteSpeed giết tiến trình và trả 503.
+function _profile_import_dept_tree($clsProperty){
+	$tree = array('parent' => array(), 'is_dept' => array());
+	$pkey = $clsProperty->pkey;
+	#- Lấy cả bảng (mọi property_type) nhưng chỉ 3 cột nhẹ, để giữ nguyên hành vi leo cây của checkIsParent()
+	$rows = $clsProperty->getAll("", "`{$pkey}`, `parent_id`, `property_type`");
+	if(empty($rows)) return $tree;
+	foreach($rows as $row){
+		$id = (int) $row[$pkey];
+		$tree['parent'][$id] = (int) $row['parent_id'];
+		if($row['property_type'] === '_DEPARTMENT') $tree['is_dept'][$id] = true;
+	}
+	return $tree;
+}
+#- Chính nó + mọi tổ tiên là phòng ban -> "|id|id|...|" (đúng định dạng Property::getListParent trả về)
+function _profile_import_list_department($department_id, $tree){
+	$ids = array($department_id);
+	$seen = array($department_id => true);
+	$current = $department_id;
+	while(isset($tree['parent'][$current])){
+		$parent = $tree['parent'][$current];
+		if($parent <= 0) break;
+		if(isset($seen[$parent])) break; // cây dữ liệu lỗi trỏ vòng -> dừng, tránh lặp vô hạn
+		$seen[$parent] = true;
+		if(isset($tree['is_dept'][$parent])) $ids[] = $parent;
+		$current = $parent;
+	}
+	return '|'.implode('|', $ids).'|';
 }
 #- Bước 1: mở modal nhập link Google Sheet
 function default_open_import(){
@@ -1770,6 +1802,7 @@ function default_read_import(){
 	if(empty($csv)){ echo 'ERROR|||Không tải được dữ liệu. Kiểm tra Sheet đã chia sẻ công khai (Bất kỳ ai có đường liên kết) chưa.'; die(); }
 	if(stripos(substr($csv, 0, 300), '<html') !== false){ echo 'ERROR|||Sheet đang riêng tư. Hãy đặt chia sẻ công khai rồi thử lại.'; die(); }
 	$rows = _profile_import_parse_csv($csv);
+	unset($csv); // sheet đã nằm trong $rows, thả chuỗi CSV để không ôm 2 bản cùng lúc
 	while(!empty($rows) && _profile_import_row_empty($rows[0])){ array_shift($rows); }
 	if(count($rows) < 2){ echo 'ERROR|||Sheet không có dữ liệu nhân sự.'; die(); }
 	if(isset($rows[0][0])){ $rows[0][0] = preg_replace('/^\xEF\xBB\xBF/', '', $rows[0][0]); }
@@ -1778,7 +1811,9 @@ function default_read_import(){
 	foreach($rows as $r){ if(count($r) > $colCount) $colCount = count($r); }
 	$uid = $clsISO->getUniqid();
 	if(!is_dir(DIR_CACHE_JSON)){ @mkdir(DIR_CACHE_JSON, 0777, true); }
-	@file_put_contents(DIR_CACHE_JSON.'/'.$uid.'.json', json_encode($rows, JSON_UNESCAPED_UNICODE));
+	$json = json_encode($rows, JSON_UNESCAPED_UNICODE);
+	@file_put_contents(DIR_CACHE_JSON.'/'.$uid.'.json', $json);
+	unset($json); // thả bản JSON ngay sau khi ghi, phần dưới chỉ còn cần $rows
 	$fields = _profile_import_fields();
 	$total_data = count($rows) - 1;
 	#- Lấy tối đa 2 ví dụ dữ liệu cho mỗi cột (dòng có giá trị)
@@ -1830,8 +1865,13 @@ function default_read_import(){
 						<div class="radio mr-2"><input name="opt_over" id="p_imp_insert" type="radio" value="Insert" checked> <label for="p_imp_insert">Thêm mới</label></div>
 						<div class="radio"><input name="opt_over" id="p_imp_update" type="radio" value="Update"> <label for="p_imp_update">Cập nhật</label></div>
 					</div>
+					<div class="form-inline mb-2">
+						<label class="col-form-label mr-1">Mật khẩu (tài khoản mới):</label>
+						<div class="radio mr-1"><input name="pass_mode" id="p_pm_def" type="radio" value="default" checked> <label for="p_pm_def">Mặc định</label></div>
+						<input type="text" name="default_pass" value="'.htmlspecialchars($default_pass).'" class="form-control input-sm mr-3" style="width:150px" />
+						<div class="radio"><input name="pass_mode" id="p_pm_cccd" type="radio" value="cccd"> <label for="p_pm_cccd">= Số CCCD (cột đã gán)</label></div>
+					</div>
 					<input type="hidden" name="uid" value="'.$uid.'" />
-					<input type="hidden" name="default_pass" value="'.htmlspecialchars($default_pass).'" />
 					<button type="button" class="btn btn-default mr-2" onclick="$Core.popup.close($(\'#profile_import_map\'))">'.$core->get_Lang('Close').'</button>
 					<button type="button" class="btn btn-success" onClick="do_import(this, event)"><span>Import vào hệ thống</span></button>
 				</div>
@@ -1851,6 +1891,7 @@ function default_do_import(){
 	$opt_over = Input::post('opt_over', 'Insert');
 	$default_pass = Input::post('default_pass', 'SkyRealty@2026');
 	if(empty($default_pass)) $default_pass = 'SkyRealty@2026';
+	$pass_mode = Input::post('pass_mode', 'default'); // 'default' | 'cccd' (= Số CCCD từ cột đã map)
 	$cachedFile = DIR_CACHE_JSON.'/'.$uid.'.json';
 	$rows = array();
 	if($uid !== '' && file_exists($cachedFile)){
@@ -1870,6 +1911,7 @@ function default_do_import(){
 	}
 	if($dupe > 0){ echo json_encode(array('result' => '_error', 'message' => 'Có 2 cột trỏ về cùng 1 trường. Mỗi trường chỉ chọn 1 cột.')); die(); }
 	if(!isset($map['code']) && !isset($map['email'])){ echo json_encode(array('result' => '_error', 'message' => 'Bắt buộc map ít nhất Mã nhân viên hoặc Email để chống trùng.')); die(); }
+	if($pass_mode === 'cccd' && !isset($map['CCID'])){ echo json_encode(array('result' => '_error', 'message' => 'Chọn mật khẩu = Số CCCD nhưng chưa gán cột "Số CCCD". Hãy map cột đó rồi thử lại.')); die(); }
 	@set_time_limit(300);
 	$pkey = $clsProfile->pkey;
 	$inserted = $updated = $skipped = $noid = $failed = 0;
@@ -1878,6 +1920,9 @@ function default_do_import(){
 	$tmpProb = $clsProperty->getByCond("`property_type`='_STATUS_STAFF' and `slug`='dang-thu-viec'", $clsProperty->pkey);
 	$status_probation_id = !empty($tmpProb) ? (int) $tmpProb[$clsProperty->pkey] : _STATUS_STAFF_ON_ID;
 	$status_cache = array(); // nhớ kết quả khớp tình trạng theo từng giá trị (tránh query lặp)
+	$dept_cache = array(); // tên phòng ban đã tra -> property_id (0 = không khớp)
+	$role_cache = array(); // tên chức danh đã tra -> property_id (0 = không khớp)
+	$dept_tree = _profile_import_dept_tree($clsProperty); // nạp 1 lần, dùng thay getListParent() ở mỗi dòng
 	$getVal = function($row, $field) use ($map){
 		return (isset($map[$field]) && isset($row[$map[$field]])) ? trim((string) $row[$map[$field]]) : '';
 	};
@@ -1895,8 +1940,11 @@ function default_do_import(){
 		foreach(array($getVal($row, 'department_id'), $getVal($row, 'department_alt')) as $dept_name){
 			if($dept_name === '') continue;
 			if($dept_report === '') $dept_report = $dept_name;
-			$tmp = $clsProperty->getByCond("`property_type`='_DEPARTMENT' and (`property_code`='".$dept_name."' OR `slug`='".$core->replaceSpace($dept_name)."')", $clsProperty->pkey);
-			if(!empty($tmp)){ $department_id = (int) $tmp[$clsProperty->pkey]; break; }
+			if(!array_key_exists($dept_name, $dept_cache)){
+				$tmp = $clsProperty->getByCond("`property_type`='_DEPARTMENT' and (`property_code`='".addslashes($dept_name)."' OR `slug`='".$core->replaceSpace($dept_name)."')", $clsProperty->pkey);
+				$dept_cache[$dept_name] = !empty($tmp) ? (int) $tmp[$clsProperty->pkey] : 0;
+			}
+			if($dept_cache[$dept_name] > 0){ $department_id = $dept_cache[$dept_name]; break; }
 		}
 		if($department_id === 0 && $dept_report !== '' && !in_array($dept_report, $unmatched_dept)) $unmatched_dept[] = $dept_report;
 
@@ -1905,8 +1953,11 @@ function default_do_import(){
 		$role_id = 0;
 		$role_name = $getVal($row, 'role_id');
 		if($role_name !== ''){
-			$tmp = $clsProperty->getByCond("`property_type`='_ROLE' and (`property_code`='".addslashes($role_name)."' OR `slug`='".$core->replaceSpace($role_name)."')", $clsProperty->pkey);
-			$role_id = !empty($tmp) ? (int) $tmp[$clsProperty->pkey] : 0;
+			if(!array_key_exists($role_name, $role_cache)){
+				$tmp = $clsProperty->getByCond("`property_type`='_ROLE' and (`property_code`='".addslashes($role_name)."' OR `slug`='".$core->replaceSpace($role_name)."')", $clsProperty->pkey);
+				$role_cache[$role_name] = !empty($tmp) ? (int) $tmp[$clsProperty->pkey] : 0;
+			}
+			$role_id = $role_cache[$role_name];
 			if($role_id === 0 && !in_array($role_name, $unmatched_role)) $unmatched_role[] = $role_name;
 		}
 		$first_name = $full_name;
@@ -1970,7 +2021,7 @@ function default_do_import(){
 		if($end_date !== '') $fieldset['end_date'] = $clsISO->toTime($end_date);
 		if($department_id > 0){
 			$fieldset['department_id'] = $department_id;
-			$fieldset['list_department_id'] = $clsProperty->getListParent($department_id);
+			$fieldset['list_department_id'] = _profile_import_list_department($department_id, $dept_tree);
 		}
 		if($role_id > 0) $fieldset['role_id'] = $role_id;
 		$fieldset['upd_date'] = time();
@@ -1995,7 +2046,9 @@ function default_do_import(){
 			$login = ($email !== '') ? $email : $code;
 			$fieldset[$pkey] = $clsProfile->getMaxId();
 			$fieldset['user_name'] = $login;
-			$fieldset['user_pass'] = $clsProfile->encrypt($default_pass);
+			#- Mật khẩu: = Số CCCD nếu chọn chế độ 'cccd' và dòng có CCID, không thì mật khẩu mặc định
+			$pass_plain = ($pass_mode === 'cccd' && $ccid !== '') ? $ccid : $default_pass;
+			$fieldset['user_pass'] = $clsProfile->encrypt($pass_plain);
 			$fieldset['oauth_provider'] = '_register';
 			if($email !== '') $fieldset['oauth_email'] = $email;
 			$fieldset['country_id'] = 1;
@@ -2006,7 +2059,6 @@ function default_do_import(){
 			if($clsProfile->insert($fieldset)){ $inserted++; } else { $failed++; }
 		}
 	}
-	@unlink($cachedFile);
 	$clsISO->clean_cache('profile');
 	$clsActivityLog = new ActivityLog();
 	$clsActivityLog->addActivityLog("Profile", "insert", array('title' => sprintf('Import nhân sự: +%d mới, %d cập nhật, %d bỏ qua', $inserted, $updated, $skipped)));
