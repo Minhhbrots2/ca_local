@@ -11,7 +11,8 @@
 			<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 			<meta name='robots' content='noindex,nofollow' />
 			<meta name="viewport" content="width=device-width, initial-scale=1">
-			<link rel="shortcut icon" href="{$DOMAIN_URL}/favicon.ico?v={$upd_version}" type="image/x-icon" />
+			{assign var=faviconUrl value=$clsConfiguration->getValue('favicon')}
+			<link rel="shortcut icon" href="{if $faviconUrl}{$faviconUrl|escape}{else}{$DOMAIN_URL}/favicon.ico{/if}?v={$upd_version}" type="image/x-icon" />
 			<link rel="preconnect" href="https://fonts.googleapis.com">
 			<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
 			<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&display=swap" rel="stylesheet">
