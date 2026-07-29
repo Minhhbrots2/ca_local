@@ -857,56 +857,114 @@ function default_property(){
 	} 
 	$assign_list["lstProperty_Type"] = $lstProperty_Type;  
 }
+/**
+ * Cấu hình hệ thống — màn hình schema-driven.
+ * Field/nhóm/tab khai báo trong models/ConfigDeclaration.php: thêm cấu hình mới
+ * chỉ sửa file đó, KHÔNG đụng hàm này và KHÔNG đụng general.tpl.
+ */
 function default_general(){
-	global $assign_list,$core,$clsConfiguration,$dbconn,$clsISO;
-	$clsCity = new City();
+	global $assign_list,$core,$clsConfiguration,$clsISO,$act;
 	$clsMember = new Member();
-	$clsCountry = new Country();
-	$clsProperty = new Property();
-	$clsProfile = new Profile();
-	$assign_list["clsCity"] = $clsCity;  
-	$assign_list["clsMember"] = $clsMember;  
-	$assign_list["clsCountry"] = $clsCountry;  
-	###
-	$list_block_types = $clsProperty->getCacheItems('_BLOCK_TYPE');
-	$assign_list["list_block_types"] = $list_block_types; 
-	$stock_support_configs = $clsConfiguration->getValue('stock_support_configs');
-	$stock_support_configs = !empty($stock_support_configs) ? json_decode($stock_support_configs, true) : array();
-	$assign_list["stock_support_configs"] = $stock_support_configs; 
-	$stock_support_extra_configs = $clsConfiguration->getValue('stock_support_extra_configs');
-	$stock_support_extra_configs = !empty($stock_support_extra_configs) ? json_decode($stock_support_extra_configs, true) : array();
-	$assign_list["stock_support_extra_configs"] = $stock_support_extra_configs; 
-	$notify_zalo_recipient = $clsConfiguration->getValue('notify_zalo_recipient');
-	$notify_zalo_recipient = !empty($notify_zalo_recipient) ? $clsISO->to_array_json($notify_zalo_recipient) : array();
-	$assign_list["notify_zalo_recipient"] = $notify_zalo_recipient; 
-	// $clsISO->print_pre($stock_support_configs); die();
-	$field = "{$clsProfile->pkey},full_name,email,phone";
-	$list_profile = $clsProfile->getAll("is_trash=0 and status_id <> '"._STATUS_STAFF_OFF_ID."'", $field);
-	$assign_list["list_profile"] = $list_profile;  
-	/** Updated */
-	if(isset($_POST['submit']) && $_POST['submit']=='Update'){
-		foreach($_POST as $key=>$val){
-			$tmp = explode('-',$key);
-			if($tmp[0]=='iso'){
-				$clsConfiguration->updateValue($tmp[1],$val);
-			}
-		}
-		###
-		$stock_support_configs = Input::post('stock_support_configs');
-		$clsConfiguration->updateValue('stock_support_configs', json_encode($stock_support_configs, JSON_UNESCAPED_UNICODE));
-		###
-		$stock_support_extra_configs = Input::post('stock_support_extra_configs');
-		$clsConfiguration->updateValue('stock_support_extra_configs', json_encode($stock_support_extra_configs, JSON_UNESCAPED_UNICODE));
-		###
-		$notify_zalo_recipient = Input::post('notify_zalo_recipient');
-		$clsConfiguration->updateValue('notify_zalo_recipient', json_encode($notify_zalo_recipient, JSON_UNESCAPED_UNICODE));
-		#activity log		
+	$assign_list["clsMember"] = $clsMember;
+	$clsDeclaration = new ConfigDeclaration();
+	/** Lọc quyền/hidden, sắp theo order, tính sẵn slug + tab active ngay tại đây */
+	$configGroups = $clsDeclaration->normalize(config_general_sources());
+	/** Lưu theo PRG: gom đúng key có trong schema → upsert → xoá cache → redirect */
+	if(Input::method() === 'POST' && Input::post('submit', '') === 'Update'){
+		$posted = isset($_POST['config']) && is_array($_POST['config']) ? $_POST['config'] : array();
+		$data = $clsDeclaration->collect($configGroups, $posted);
+		$isSaved = $clsConfiguration->saveBatch($data, (int) $core->_USER['user_id']);
 		$clsActivityLog = new ActivityLog();
-		$log = $clsActivityLog->addActivityLog("Configuration","update",['field' =>"general"]);
-		// Return
-		header('Location:'.PCMS_URL.'?mod=setting&act=general&message=updateSuccess');
+		$clsActivityLog->addActivityLog("Configuration","update",['field' =>"general"]);
+		$url = PCMS_URL.'?mod=setting&act='.$act.'&message='.($isSaved ? 'updateSuccess' : 'updateFail');
+		header('Location:'.$url);
 		exit();
 	}
+	$assign_list["configGroups"] = config_general_bind($configGroups, $clsConfiguration, $clsMember);
+}
+/**
+ * Nguồn option động cho các field khai báo 'source'.
+ * Nạp ở controller để .tpl không phải truy vấn và không phải biết model nào.
+ */
+function config_general_sources(){
+	$sources = array(
+		'profile'      => array(),
+		'block_type'   => array(),
+		'app_template' => array()
+	);
+	$clsProfile = new Profile();
+	$field = "{$clsProfile->pkey},full_name";
+	$list_profile = $clsProfile->getAll("is_trash=0 and status_id <> '"._STATUS_STAFF_OFF_ID."'", $field);
+	if(!empty($list_profile)){
+		foreach($list_profile as $_oProfile){
+			$sources['profile'][$_oProfile['profile_id']] = $_oProfile['full_name'];
+		}
+	}
+	$clsProperty = new Property();
+	$list_block_types = $clsProperty->getCacheItems('_BLOCK_TYPE');
+	if(!empty($list_block_types)){
+		foreach($list_block_types as $_oBlock){
+			$sources['block_type'][$_oBlock['property_id']] = $_oBlock['title'];
+		}
+	}
+	/** Danh sách giao diện do tầng khác nạp; không có thì nhóm Giao diện tự ẩn */
+	if(!empty($GLOBALS['listAppTemplate'])){
+		foreach($GLOBALS['listAppTemplate'] as $_template){
+			$sources['app_template'][$_template] = $_template;
+		}
+	}
+	return $sources;
+}
+/**
+ * Gắn giá trị hiện tại vào từng field đã chuẩn hóa.
+ * Mọi thứ .tpl cần đều tính sẵn ở đây: current (chuỗi), current_list (mảng đã
+ * json_decode), support_rows (bảng tài khoản hỗ trợ kèm tên thành viên).
+ */
+function config_general_bind($configGroups, $clsConfiguration, $clsMember){
+	foreach($configGroups as $_indexGroup => $_group){
+		foreach($_group['fields'] as $_indexField => $_field){
+			$keyword = $_field['keyword'];
+			$default = isset($_field['default']) ? $_field['default'] : '';
+			$_field['current'] = $clsConfiguration->getValue($keyword, $default);
+			$_field['current_list'] = !empty($_field['json']) ? $clsConfiguration->getArray($keyword) : array();
+			/**
+			 * Map để .tpl kiểm tra option đã chọn bằng isset — không so sánh trong
+			 * template. PHP 7 coi '' == 0 là đúng nên so lỏng sẽ tự chọn nhầm
+			 * option có key 0 khi chưa có giá trị nào.
+			 */
+			$current = is_scalar($_field['current']) ? (string) $_field['current'] : '';
+			if(!empty($_field['multiple'])){
+				$_field['current_map'] = array_flip(array_map('strval', array_filter($_field['current_list'], 'is_scalar')));
+			} else {
+				$_field['current_map'] = array($current => 1);
+			}
+			$_field['is_checked'] = ($current === '1');
+			if($_field['type'] === 'stock_support'){
+				$_field['support_rows'] = config_general_support_rows($_field, $clsConfiguration, $clsMember);
+			}
+			$configGroups[$_indexGroup]['fields'][$_indexField] = $_field;
+		}
+	}
+	return $configGroups;
+}
+/** Mỗi loại bảng hàng một dòng: tài khoản hỗ trợ chính + phụ, kèm sẵn tên hiển thị. */
+function config_general_support_rows($field, $clsConfiguration, $clsMember){
+	$rows = array();
+	$mainValues = $clsConfiguration->getArray($field['keyword']);
+	$extraValues = !empty($field['pair_keyword']) ? $clsConfiguration->getArray($field['pair_keyword']) : array();
+	foreach($field['select'] as $property_id => $title){
+		$main_id = isset($mainValues[$property_id]) ? $mainValues[$property_id] : '';
+		$extra_id = isset($extraValues[$property_id]) ? $extraValues[$property_id] : '';
+		$rows[] = array(
+			'property_id' => $property_id,
+			'title'       => $title,
+			'main_id'     => $main_id,
+			'main_name'   => $main_id !== '' ? $clsMember->getFullName($main_id) : '',
+			'extra_id'    => $extra_id,
+			'extra_name'  => $extra_id !== '' ? $clsMember->getFullName($extra_id) : ''
+		);
+	}
+	return $rows;
 }
 function default_address(){
 	global $assign_list,$core,$mod, $act,$clsConfiguration,$dbconn,$clsISO;

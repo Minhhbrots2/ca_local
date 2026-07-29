@@ -34,7 +34,7 @@
 				<input type="hidden" name="mod_page" value="{$mod}">
 				<input type="hidden" name="act_page" value="{$act}">
 			</form>
-			<p class="sky-auth__support">Gặp vấn đề về tài khoản?<br />Vui lòng liên hệ Ban công nghệ <a href="mailto:itr@skyrealty.vn">itr@skyrealty.vn</a></p>
+			<p class="sky-auth__support">Gặp vấn đề về tài khoản?<br />Vui lòng liên hệ Ban công nghệ <a href="mailto:{$clsConfiguration->getValue('mail_it')}">{$clsConfiguration->getValue('mail_it')}</a></p>
 		</div>
 	</div>
 	</div>
