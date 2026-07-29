@@ -1,25 +1,15 @@
 {* Công tắc bật/tắt. Tự dựng cả khối vì nhãn nằm cạnh ô đánh dấu ('bare' => true).
    Ô ẩn cùng name đứng trước để khi bỏ tick vẫn gửi lên 0 thay vì thiếu hẳn key. *}
-<div class="form-group">
+<label class="setting-general__check">
 
-	<div class="col-md-12">
+	<input type="hidden" name="config[{$keyword|escape}]" value="0" />
 
-		<div class="checkbox">
+	<input type="checkbox" name="config[{$keyword|escape}]" value="1"{if $val.is_checked} checked="checked"{/if} />
 
-			<label>
+	<span class="setting-general__check-text">{$val.label|escape}</span>
 
-				<input type="hidden" name="config[{$keyword|escape}]" value="0" />
+</label>
 
-				<input type="checkbox" name="config[{$keyword|escape}]" value="1"{if $val.is_checked} checked="checked"{/if} /> {$val.label|escape}
+{if !empty($val.help)}<span class="setting-general__field-help">{$val.help|escape}</span>{/if}
 
-			</label>
-
-		</div>
-
-		{if !empty($val.help)}<span class="help-block">{$val.help|escape}</span>{/if}
-
-		{if !empty($val.attention)}<span class="help-block text-red">{$val.attention|escape}</span>{/if}
-
-	</div>
-
-</div>
+{if !empty($val.attention)}<span class="setting-general__field-help setting-general__field-help--warn">{$val.attention|escape}</span>{/if}

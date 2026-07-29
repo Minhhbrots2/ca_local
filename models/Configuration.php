@@ -78,6 +78,46 @@ class Configuration extends DbBasic {
 	}
 
 	/**
+	 * Bề ngang (px) đã lưu của 1 key ảnh; chưa lưu thì trả $def.
+	 * @return int
+	 */
+	public function getImageWidth($keyword, $def = 0){
+		$value = (int) $this->getValue($keyword.ConfigDeclaration::WIDTH_SUFFIX, 0);
+		return $value > 0 ? $value : (int) $def;
+	}
+
+	/**
+	 * Chiều cao (px) đã lưu của 1 key ảnh; chưa lưu thì trả $def.
+	 * @return int
+	 */
+	public function getImageHeight($keyword, $def = 0){
+		$value = (int) $this->getValue($keyword.ConfigDeclaration::HEIGHT_SUFFIX, 0);
+		return $value > 0 ? $value : (int) $def;
+	}
+
+	/**
+	 * Cụm thuộc tính src/width/height của 1 key ảnh, dùng thẳng trong .tpl:
+	 *   <img {$clsConfiguration->getImageAttr('LogoWhite', 0, 40)} alt="..." />
+	 * $defWidth/$defHeight là kích thước dùng khi admin chưa cấu hình — truyền
+	 * đúng số đang hardcode ở template để đổi sang hàm này không đổi giao diện.
+	 * Kích thước bằng 0 thì không in thuộc tính, để CSS tự quyết như trước.
+	 * Tự escape vì template autoescape đang tắt.
+	 * @return string
+	 */
+	public function getImageAttr($keyword, $defWidth = 0, $defHeight = 0){
+		$attr = 'src="'.htmlspecialchars($this->getValue($keyword, ''), ENT_QUOTES, 'UTF-8').'"';
+		$width = $this->getImageWidth($keyword, $defWidth);
+		$height = $this->getImageHeight($keyword, $defHeight);
+		if($width > 0){
+			$attr .= ' width="'.$width.'"';
+		}
+		if($height > 0){
+			$attr .= ' height="'.$height.'"';
+		}
+		return $attr;
+	}
+
+	/**
 	 * Giá trị đã json_decode của field khai báo 'json' => true.
 	 * @return array
 	 */

@@ -1,3 +1,6 @@
+{* Cấu hình hệ thống — một trang, một form, một lần lưu.
+   Rail trái chỉ để nhảy nhanh tới nhóm và lọc field, KHÔNG cắt form thành tab:
+   mọi field luôn nằm trong DOM nên submit không bao giờ thiếu key. *}
 <header class="ui-title-bar-container ">
 
 	<div class="ui-title-bar">
@@ -42,9 +45,43 @@
 
 	<div class="ui-layout">
 
-		<div class="ui-layout__sections">
+		<div class="setting-general">
 
-			<div class="ui-layout__section setting-general__groups">
+			<aside class="setting-general__rail">
+
+				<div class="setting-general__search">
+
+					{$core->makeIcon('search')}
+
+					<input type="text" id="setting-general-search" class="form-control" placeholder="Tìm cấu hình..." autocomplete="off" aria-label="Tìm cấu hình" />
+
+					<button type="button" class="setting-general__search-clear" id="setting-general-search-clear" aria-label="Xóa từ khóa">{$core->makeIcon('times')}</button>
+
+				</div>
+
+				<nav class="setting-general__nav" aria-label="Nhóm cấu hình">
+
+					{foreach from=$configGroups item=_oGroup name=railLoop}
+
+					<a href="#{$_oGroup.slug|escape}" class="setting-general__nav-item{if $smarty.foreach.railLoop.first} is-active{/if}" data-slug="{$_oGroup.slug|escape}">
+
+						{$core->makeIcon($_oGroup.icon)}
+
+						<span class="setting-general__nav-text">{$_oGroup.label|escape}</span>
+
+						<span class="setting-general__nav-count"></span>
+
+						<i class="setting-general__nav-dot" title="Nhóm này có thay đổi chưa lưu"></i>
+
+					</a>
+
+					{/foreach}
+
+				</nav>
+
+			</aside>
+
+			<div class="setting-general__groups">
 
 				{foreach from=$configGroups item=_oGroup}
 
@@ -52,25 +89,21 @@
 
 				{/foreach}
 
+				<p class="setting-general__empty">Không có cấu hình nào khớp từ khóa đang tìm.</p>
+
 			</div>
 
 		</div>
 
-	</div>
+		<div class="setting-general__savebar">
 
-	<div class="clearfix"></div>
+			<span class="setting-general__savebar-text"><b class="setting-general__savebar-count">0</b> thay đổi chưa lưu</span>
 
-	<div class="ui-page-actions ui-page-actions--has-secondary">
+			<div class="setting-general__savebar-actions">
 
-		<div class="ui-page-actions__container">
+				<input value="Update" name="submit" type="hidden" />
 
-			<div class="ui-page-actions__actions ui-page-actions__actions--secondary"></div>
-
-			<div class="ui-page-actions__actions ui-page-actions__actions--primary">
-
-				<input value="Update" name="submit" type="hidden">
-
-				<div class="ui-page-actions__button-group">{$saveBtn}</div>
+				{$saveBtn}
 
 			</div>
 
@@ -82,8 +115,17 @@
 {literal}
 <script type="text/javascript">
 	$(function(){
+		var $groups = $('.setting-general__groups');
+		var $navItems = $('.setting-general__nav-item');
+		var $saveBar = $('.setting-general__savebar');
+		var $search = $('#setting-general-search');
+
+		if(!$groups.length){
+			return;
+		}
+
 		/* Bảng màu và ô text đi cặp: ô text mới là giá trị được lưu. */
-		$('.setting-general__groups').on('input change', '.config-color__picker', function(){
+		$groups.on('input change', '.config-color__picker', function(){
 			$(this).closest('.input-group').find('.config-color__value').val($(this).val());
 		}).on('input change', '.config-color__value', function(){
 			var _value = ($(this).val() || '').trim();
@@ -91,6 +133,122 @@
 			if(/^#[0-9a-fA-F]{6}$/.test(_value)){
 				$(this).closest('.input-group').find('.config-color__picker').val(_value);
 			}
+		});
+
+		/* Bỏ dấu tiếng Việt để gõ "ngan hang" vẫn tìm ra "Tên ngân hàng". */
+		function plainText(_text){
+			var _value = (_text === undefined || _text === null) ? '' : String(_text);
+
+			_value = _value.toLowerCase();
+			if(_value.normalize){
+				_value = _value.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+			}
+			return _value.replace(/đ/g, 'd');
+		}
+
+		/* Đếm field đã sửa để người dùng biết đang đổi những gì trước khi lưu. */
+		function refreshDirty(){
+			var _total = $groups.find('.setting-general__field.is-dirty').length;
+
+			$('.setting-general__savebar-count').text(_total);
+			$saveBar.toggleClass('is-open', _total > 0);
+			$navItems.each(function(){
+				var $item = $(this);
+				var _dirty = $('#' + $item.attr('data-slug')).find('.setting-general__field.is-dirty').length;
+
+				$item.toggleClass('is-dirty', _dirty > 0);
+			});
+		}
+
+		$groups.on('input change', 'input, select, textarea', function(){
+			var $field = $(this).closest('.setting-general__field');
+
+			if(!$field.length){
+				return;
+			}
+			$field.addClass('is-dirty');
+			refreshDirty();
+		});
+
+		/* Lọc theo nhãn + keyword. Field không khớp chỉ bị ẩn bằng CSS,
+		   vẫn nằm trong form nên giá trị cũ không bao giờ bị ghi rỗng. */
+		function runSearch(){
+			var _term = plainText($search.val()).trim();
+			var _visible = 0;
+
+			$('.setting-general__group').each(function(){
+				var $group = $(this);
+				var _groupHit = _term !== '' && plainText($group.attr('data-label')).indexOf(_term) !== -1;
+				var _hit = 0;
+
+				$group.find('.setting-general__field').each(function(){
+					var $field = $(this);
+					var _haystack = plainText($field.attr('data-label') + ' ' + $field.attr('data-keyword'));
+					var _match = _term === '' || _groupHit || _haystack.indexOf(_term) !== -1;
+
+					$field.toggleClass('is-hidden', !_match);
+					if(_match){
+						_hit++;
+					}
+				});
+				$group.toggleClass('is-hidden', _hit === 0);
+				if(_hit > 0){
+					_visible++;
+				}
+				$('.setting-general__nav-item[data-slug="' + $group.attr('data-slug') + '"]')
+					.toggleClass('is-empty', _hit === 0)
+					.find('.setting-general__nav-count').text(_term === '' ? '' : _hit);
+			});
+			$('.setting-general').toggleClass('is-searching', _term !== '');
+			$('.setting-general__empty').toggleClass('is-open', _visible === 0);
+		}
+
+		$search.on('input', runSearch).on('keydown', function(e){
+			/* Enter trong ô tìm kiếm không được submit cả form. */
+			if(e.which === 13){
+				e.preventDefault();
+			}
+		});
+		$('#setting-general-search-clear').on('click', function(){
+			$search.val('');
+			runSearch();
+			$search.focus();
+		});
+
+		/* Rail bám theo nhóm đang xem. Không có IntersectionObserver thì rail
+		   vẫn bấm được, chỉ mất phần tự sáng. */
+		if(window.IntersectionObserver){
+			var _spy = new IntersectionObserver(function(entries){
+				$.each(entries, function(_index, _entry){
+					if(!_entry.isIntersecting){
+						return;
+					}
+					$navItems.removeClass('is-active');
+					$('.setting-general__nav-item[data-slug="' + _entry.target.id + '"]').addClass('is-active');
+				});
+			}, { rootMargin: '-100px 0px -60% 0px' });
+
+			$('.setting-general__group').each(function(){
+				_spy.observe(this);
+			});
+		}
+
+		$navItems.on('click', function(e){
+			var _top = $('#' + $(this).attr('data-slug')).offset().top - 100;
+
+			e.preventDefault();
+			$navItems.removeClass('is-active');
+			$(this).addClass('is-active');
+			$('html, body').animate({ scrollTop: _top }, 220);
+		});
+
+		/* Ctrl+S lưu như mọi màn soạn thảo khác, không phải cuộn xuống cuối trang. */
+		$(document).on('keydown', function(e){
+			if(!(e.ctrlKey || e.metaKey) || e.which !== 83){
+				return;
+			}
+			e.preventDefault();
+			$saveBar.find('button, input[type="submit"]').first().click();
 		});
 	});
 </script>

@@ -939,6 +939,11 @@ function config_general_bind($configGroups, $clsConfiguration, $clsMember){
 				$_field['current_map'] = array($current => 1);
 			}
 			$_field['is_checked'] = ($current === '1');
+			if($_field['type'] === 'images'){
+				$_field['preview_src'] = config_general_image_preview($_field, $current);
+				$_field['current_width'] = config_general_image_size($clsConfiguration, $_field['width_keyword'], $_field['default_width']);
+				$_field['current_height'] = config_general_image_size($clsConfiguration, $_field['height_keyword'], $_field['default_height']);
+			}
 			if($_field['type'] === 'stock_support'){
 				$_field['support_rows'] = config_general_support_rows($_field, $clsConfiguration, $clsMember);
 			}
@@ -946,6 +951,27 @@ function config_general_bind($configGroups, $clsConfiguration, $clsMember){
 		}
 	}
 	return $configGroups;
+}
+/**
+ * Ảnh xem trước của field ảnh: giá trị đang lưu → ảnh demo khai báo → ảnh trống.
+ * Luôn trả về đường dẫn khác rỗng, vì src="" khiến trình duyệt tải lại chính trang.
+ */
+function config_general_image_preview($field, $current){
+	if($current !== ''){
+		return $current;
+	}
+	if(!empty($field['demo'])){
+		return $field['demo'];
+	}
+	return URL_IMAGES.'/none_image.png';
+}
+/**
+ * Kích thước ảnh đang lưu; chưa từng lưu thì lấy mặc định khai báo trong schema
+ * để ô nhập không bao giờ trống và ảnh xem trước luôn có kích thước.
+ */
+function config_general_image_size($clsConfiguration, $keyword, $default){
+	$value = (int) $clsConfiguration->getValue($keyword, 0);
+	return $value > 0 ? $value : (int) $default;
 }
 /** Mỗi loại bảng hàng một dòng: tài khoản hỗ trợ chính + phụ, kèm sẵn tên hiển thị. */
 function config_general_support_rows($field, $clsConfiguration, $clsMember){
@@ -1308,13 +1334,29 @@ function default_profile(){
 			if($tmp[0]=='iso'){
 				if(is_array($val)) {
 					$clsConfiguration->updateValue($tmp[1],json_encode($val,JSON_UNESCAPED_UNICODE));
+				}else if(config_profile_is_size_key($tmp[1])){
+					// Kích thước ảnh luôn là số px; chặn chuỗi rác lọt vào thuộc tính width/height.
+					$clsConfiguration->updateValue($tmp[1],(string) max(0, (int) $val));
 				}else{
 					$clsConfiguration->updateValue($tmp[1],$val);
-				}				
+				}
 			}
 		}
 		header('location:'.PCMS_URL.'?mod=setting&act=profile&message=updateSuccess');
 	}
+}
+/**
+ * Key này có phải kích thước ảnh (<key>_width / <key>_height) không.
+ * Dùng chung hậu tố với ConfigDeclaration để 2 màn cấu hình đọc ghi cùng 1 key.
+ */
+function config_profile_is_size_key($keyword){
+	$suffixes = array(ConfigDeclaration::WIDTH_SUFFIX, ConfigDeclaration::HEIGHT_SUFFIX);
+	foreach($suffixes as $suffix){
+		if(substr($keyword, -strlen($suffix)) === $suffix){
+			return true;
+		}
+	}
+	return false;
 }
 function default_permission(){
 	global $assign_list,$core,$clsConfiguration,$dbconn;

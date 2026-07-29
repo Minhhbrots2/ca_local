@@ -55,52 +55,12 @@
                 </section>
                 <section class="cfg-card">
                     <h3 class="cfg-card__title"><i class="fa fa-picture-o"></i> {$core->get_Lang('logo')}</h3>
-                    <div class="cfg-row">
-                        <label class="cfg-row__label">{$core->get_Lang('Email Logo')}</label>
-                        <div class="cfg-row__control cfg-imgfield">
-                            <img class="isoman_img_pop" id="isoman_show_image" src="{$clsConfiguration->getValue('CompanyLogo')}" />
-                            <input type="hidden" id="isoman_hidden_image" value="{$clsConfiguration->getValue('CompanyLogo')}">
-                            <input class="cfg-input" type="text" id="isoman_url_image" name="iso-CompanyLogo" value="{$clsConfiguration->getValue('CompanyLogo')|escape}">
-                            <a href="#" class="ajOpenDialog cfg-pick" isoman_for_id="image" isoman_val="{$clsConfiguration->getValue('CompanyLogo')}" isoman_name="image"><img src="{$URL_IMAGES}/general/folder-32.png" border="0" title="Open" alt="Open"></a>
-                        </div>
-                    </div>
-                    <div class="cfg-row">
-                        <label class="cfg-row__label">{$core->get_Lang('Header Logo')}</label>
-                        <div class="cfg-row__control cfg-imgfield">
-                            <img class="isoman_img_pop" id="isoman_show_image_Fx" src="{$clsConfiguration->getValue('HeaderLogo')}" />
-                            <input type="hidden" id="isoman_hidden_image_Fx" value="{$clsConfiguration->getValue('HeaderLogo')}">
-                            <input class="cfg-input" type="text" id="isoman_url_image_Fx" name="iso-HeaderLogo" value="{$clsConfiguration->getValue('HeaderLogo')|escape}">
-                            <a href="#" class="ajOpenDialog cfg-pick" isoman_for_id="image_Fx" isoman_val="{$clsConfiguration->getValue('HeaderLogo')}" isoman_name="image"><img src="{$URL_IMAGES}/general/folder-32.png" border="0" title="Open" alt="Open"></a>
-                        </div>
-                    </div>
-                    <div class="cfg-row">
-                        <label class="cfg-row__label">Logo màu trắng</label>
-                        <div class="cfg-row__control cfg-imgfield">
-                            <img class="isoman_img_pop" id="isoman_show_image_Wht" src="{$clsConfiguration->getValue('LogoWhite')}" />
-                            <input type="hidden" id="isoman_hidden_image_Wht" value="{$clsConfiguration->getValue('LogoWhite')}">
-                            <input class="cfg-input" type="text" id="isoman_url_image_Wht" name="iso-LogoWhite" value="{$clsConfiguration->getValue('LogoWhite')|escape}">
-                            <a href="#" class="ajOpenDialog cfg-pick" isoman_for_id="image_Wht" isoman_val="{$clsConfiguration->getValue('LogoWhite')}" isoman_name="image"><img src="{$URL_IMAGES}/general/folder-32.png" border="0" title="Open" alt="Open"></a>
-                        </div>
-                    </div>
+                    {include file="./_cfg_image.tpl" keyword="CompanyLogo" for_id="image" label=$core->get_Lang('Email Logo')}
+                    {include file="./_cfg_image.tpl" keyword="HeaderLogo" for_id="image_Fx" label=$core->get_Lang('Header Logo')}
+                    {include file="./_cfg_image.tpl" keyword="LogoWhite" for_id="image_Wht" label="Logo màu trắng"}
                     {if 1 eq 2}
-                    <div class="cfg-row">
-                        <label class="cfg-row__label">{$core->get_Lang('Header Logo')} (Page In)</label>
-                        <div class="cfg-row__control cfg-imgfield">
-                            <img class="isoman_img_pop" id="isoman_show_image_Fx1" src="{$clsConfiguration->getValue('HeaderLogoPage')}" />
-                            <input type="hidden" id="isoman_hidden_image_Fx1" value="{$clsConfiguration->getValue('HeaderLogoPage')}">
-                            <input class="cfg-input" type="text" id="isoman_url_image_Fx1" name="iso-HeaderLogoPage" value="{$clsConfiguration->getValue('HeaderLogoPage')|escape}">
-                            <a href="#" class="ajOpenDialog cfg-pick" isoman_for_id="image_Fx1" isoman_val="{$clsConfiguration->getValue('HeaderLogoPage')}" isoman_name="image"><img src="{$URL_IMAGES}/general/folder-32.png" border="0" title="Open" alt="Open"></a>
-                        </div>
-                    </div>
-                    <div class="cfg-row">
-                        <label class="cfg-row__label">{$core->get_Lang('Footer Logo')}</label>
-                        <div class="cfg-row__control cfg-imgfield">
-                            <img class="isoman_img_pop" id="isoman_show_image_Fx2" src="{$clsConfiguration->getValue('FooterLogo')}" />
-                            <input type="hidden" id="isoman_hidden_image_Fx2" value="{$clsConfiguration->getValue('FooterLogo')}">
-                            <input class="cfg-input" type="text" id="isoman_url_image_Fx2" name="iso-FooterLogo" value="{$clsConfiguration->getValue('FooterLogo')|escape}">
-                            <a href="#" class="ajOpenDialog cfg-pick" isoman_for_id="image_Fx2" isoman_val="{$clsConfiguration->getValue('FooterLogo')}" isoman_name="image"><img src="{$URL_IMAGES}/general/folder-32.png" border="0" title="Open" alt="Open"></a>
-                        </div>
-                    </div>
+                    {include file="./_cfg_image.tpl" keyword="HeaderLogoPage" for_id="image_Fx1" label="`$core->get_Lang('Header Logo')` (Page In)"}
+                    {include file="./_cfg_image.tpl" keyword="FooterLogo" for_id="image_Fx2" label=$core->get_Lang('Footer Logo')}
                     {/if}
                 </section>
 
@@ -118,15 +78,7 @@
                             <input class="cfg-input" type="text" name="iso-checkin_brand_name" placeholder="Vd: Future Way (để trống = mặc định)" value="{$clsConfiguration->getValue('checkin_brand_name')|escape}">
                         </div>
                     </div>
-                    <div class="cfg-row">
-                        <label class="cfg-row__label">Favicon</label>
-                        <div class="cfg-row__control cfg-imgfield">
-                            <img class="isoman_img_pop" id="isoman_show_image_Fx3" src="{$clsConfiguration->getValue('Favicon')}" />
-                            <input type="hidden" id="isoman_hidden_image_Fx3" value="{$clsConfiguration->getValue('Favicon')}">
-                            <input class="cfg-input" type="text" id="isoman_url_image_Fx3" name="iso-Favicon" value="{$clsConfiguration->getValue('Favicon')|escape}">
-                            <a href="#" class="ajOpenDialog cfg-pick" isoman_for_id="image_Fx3" isoman_val="{$clsConfiguration->getValue('Favicon')}" isoman_name="image"><img src="{$URL_IMAGES}/general/folder-32.png" border="0" title="Open" alt="Open"></a>
-                        </div>
-                    </div>
+                    {include file="./_cfg_image.tpl" keyword="Favicon" for_id="image_Fx3" label="Favicon"}
                     <div class="cfg-row">
                         <label class="cfg-row__label">Màu thương hiệu</label>
                         <div class="cfg-row__control">

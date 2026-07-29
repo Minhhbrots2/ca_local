@@ -59,7 +59,7 @@
 	<div class="ui-top-bar">
 		<div class="ui-top-bar__branding" id="logo">
 			<a href="{$PCMS_URL}" title="{$PAGE_NAME}">
-				<img height="40px" src="{$clsConfiguration->getValue('LogoWhite')}" alt="{$PAGE_NAME}" />
+				<img {$clsConfiguration->getImageAttr('LogoWhite', 0, 40)} alt="{$PAGE_NAME}" />
 			</a>
 		</div>
 		<div class="ui-top-bar__list">

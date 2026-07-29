@@ -54,7 +54,7 @@
 	$assign_list["curl"] = $_SERVER['REQUEST_URI'];
 	$assign_list["REQUEST_URI"] = $_SERVER['REQUEST_URI'];
 	$assign_list["QUERY_STRING"] = $_SERVER['QUERY_STRING'];
-	$assign_list["upd_version"] = sprintf('%s', 'v.1.1.50');
+	$assign_list["upd_version"] = sprintf('%s', 'v.1.1.51');
 	#
 	$clsCache = new Cache();
 	$clsISO = new ISO(); $assign_list["clsISO"] = $clsISO;

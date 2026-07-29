@@ -2283,7 +2283,9 @@ body.mod-setting .cfg-input:focus {
   box-shadow: 0 0 0 3px rgba(164, 22, 26, .10);
 }
 body.mod-setting .cfg-imgfield { display: flex; align-items: center; gap: 8px; }
-body.mod-setting .cfg-imgfield .cfg-input { flex: 1 1 auto; }
+body.mod-setting .cfg-imgfield .cfg-input,
+body.mod-setting .cfg-imgfield .form-control { flex: 1 1 auto; width: auto; min-width: 0; }
+body.mod-setting .cfg-imgfield .cfg-imgfield__size { flex: 0 0 78px; width: 78px; text-align: center; }
 body.mod-setting .cfg-imgfield .isoman_img_pop {
   flex: 0 0 auto;
   width: 40px;
@@ -2334,3 +2336,312 @@ body.mod-setting .cfg-footer button {
 }
 body.mod-setting .cfg-footer .save_setting:hover,
 body.mod-setting .cfg-footer button:hover { background: var(--fh-crimson-700); }
+
+/* ============================================================
+   Cấu hình hệ thống (?mod=setting&act=general) — rail điều hướng
+   + luồng thẻ liên tục. Một trang, một form, một lần lưu: rail chỉ
+   cuộn và lọc, KHÔNG cắt form thành tab nên submit luôn đủ key.
+   ============================================================ */
+body.mod-setting .setting-general {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+body.mod-setting .setting-general__groups { min-width: 0; }
+
+/* ---------- rail trái ---------- */
+body.mod-setting .setting-general__rail {
+  position: sticky;
+  top: 100px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+body.mod-setting .setting-general__search { position: relative; }
+body.mod-setting .setting-general__search > i {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--fh-muted-2);
+  font-size: 13px;
+  pointer-events: none;
+}
+body.mod-setting .setting-general__search .form-control {
+  padding-left: 33px;
+  padding-right: 32px;
+  border-radius: 999px;
+}
+body.mod-setting .setting-general__search-clear {
+  position: absolute;
+  right: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--fh-muted);
+  cursor: pointer;
+}
+body.mod-setting .setting-general.is-searching .setting-general__search-clear { display: block; }
+body.mod-setting .setting-general__nav {
+  padding: 6px;
+  background: var(--fh-card);
+  border: 1px solid var(--fh-border);
+  border-radius: var(--fh-radius);
+}
+body.mod-setting .setting-general__nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 10px;
+  border-radius: var(--fh-radius-sm);
+  color: var(--fh-muted);
+  font-size: 12.5px;
+  font-weight: 500;
+  text-decoration: none;
+}
+body.mod-setting .setting-general__nav-item:hover {
+  background: var(--fh-bg);
+  color: var(--fh-text);
+  text-decoration: none;
+}
+body.mod-setting .setting-general__nav-item.is-active {
+  background: rgba(29, 68, 107, .08);
+  color: var(--fh-crimson);
+  font-weight: 600;
+}
+body.mod-setting .setting-general__nav-item.is-empty { opacity: .4; }
+body.mod-setting .setting-general__nav-item > i {
+  width: 15px;
+  font-size: 13px;
+  text-align: center;
+}
+body.mod-setting .setting-general__nav-text {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+body.mod-setting .setting-general__nav-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--fh-muted-2);
+}
+body.mod-setting .setting-general__nav-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fh-crimson);
+  opacity: 0;
+}
+body.mod-setting .setting-general__nav-item.is-dirty .setting-general__nav-dot { opacity: 1; }
+
+/* ---------- thẻ nhóm ---------- */
+body.mod-setting .setting-general__group {
+  margin-bottom: 16px;
+  background: var(--fh-card);
+  border: 1px solid var(--fh-border);
+  border-radius: var(--fh-radius);
+  box-shadow: var(--fh-shadow);
+  scroll-margin-top: 100px;
+}
+body.mod-setting .setting-general__group-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--fh-border-2);
+}
+body.mod-setting .setting-general__group-icon {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(29, 68, 107, .08);
+  color: var(--fh-crimson);
+}
+body.mod-setting .setting-general__group-icon > i { font-size: 15px; }
+body.mod-setting .setting-general__group-title {
+  margin: 0 0 2px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fh-text);
+}
+body.mod-setting .setting-general__group-desc {
+  max-width: 92ch;
+  margin: 0;
+  color: var(--fh-muted);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+body.mod-setting .setting-general__group-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px 22px;
+  padding: 16px 20px 20px;
+}
+
+/* ---------- field ---------- */
+body.mod-setting .setting-general__field { min-width: 0; }
+body.mod-setting .setting-general__field[data-type="textarea"],
+body.mod-setting .setting-general__field[data-type="editor"],
+body.mod-setting .setting-general__field[data-type="select2"],
+body.mod-setting .setting-general__field[data-type="stock_support"],
+body.mod-setting .setting-general__field[data-type="images"],
+body.mod-setting .setting-general__field[data-type="files"] { grid-column: 1 / -1; }
+body.mod-setting .setting-general__field-label {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--fh-text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+body.mod-setting .setting-general__field-required { color: #c0392b; }
+body.mod-setting .setting-general__field-help {
+  display: block;
+  margin-top: 5px;
+  color: var(--fh-muted);
+  font-size: 12px;
+  line-height: 1.5;
+  word-break: break-word;
+}
+body.mod-setting .setting-general__field-help--warn { color: #b4551f; }
+/* Ô dán script của bên thứ ba: đọc bằng font đều mới soi được dấu ngoặc. */
+body.mod-setting .setting-general__field--code textarea.form-control {
+  background: var(--fh-bg);
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+/* Chấm báo field vừa sửa — dùng hình khối, không dùng chữ, để không phụ
+   thuộc bảng mã khi file CSS được nạp rời khỏi trang. */
+body.mod-setting .setting-general__field.is-dirty .setting-general__field-label::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: var(--fh-crimson);
+  vertical-align: middle;
+}
+body.mod-setting .setting-general__field.is-dirty .form-control { border-color: var(--fh-crimson); }
+body.mod-setting .setting-general__field.is-hidden,
+body.mod-setting .setting-general__group.is-hidden { display: none; }
+/* chosen/selectize tự đặt width inline nên phải ghi đè để không tràn cột */
+body.mod-setting .setting-general__field .chosen-container,
+body.mod-setting .setting-general__field .selectize-control { width: 100% !important; }
+body.mod-setting .setting-general__check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+/* ---------- bảng tài khoản hỗ trợ ---------- */
+body.mod-setting .setting-general__support {
+  border: 1px solid var(--fh-border);
+  border-radius: var(--fh-radius-sm);
+  overflow: hidden;
+}
+body.mod-setting .setting-general__support-head,
+body.mod-setting .setting-general__support-row {
+  display: grid;
+  grid-template-columns: minmax(110px, 20%) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+}
+body.mod-setting .setting-general__support-head {
+  background: var(--fh-bg);
+  border-bottom: 1px solid var(--fh-border);
+  color: var(--fh-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+body.mod-setting .setting-general__support-row + .setting-general__support-row { border-top: 1px solid var(--fh-border-2); }
+body.mod-setting .setting-general__support-name {
+  color: var(--fh-text);
+  font-weight: 600;
+}
+
+/* ---------- trạng thái rỗng khi tìm kiếm ---------- */
+body.mod-setting .setting-general__empty {
+  display: none;
+  margin: 0;
+  padding: 34px 20px;
+  background: var(--fh-card);
+  border: 1px dashed var(--fh-border);
+  border-radius: var(--fh-radius);
+  color: var(--fh-muted);
+  text-align: center;
+}
+body.mod-setting .setting-general__empty.is-open { display: block; }
+
+/* ---------- thanh lưu bám đáy ----------
+   Luôn hiện: nút Lưu phải có mặt kể cả khi chưa sửa gì. Chỉ phần đếm
+   thay đổi mới bật/tắt, và ẩn bằng visibility để thanh không nhảy cao. */
+body.mod-setting .setting-general__savebar {
+  position: sticky;
+  bottom: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 10px 16px;
+  background: var(--fh-card);
+  border: 1px solid var(--fh-border);
+  border-radius: var(--fh-radius);
+  box-shadow: var(--fh-shadow-md);
+  transition: border-color .18s;
+}
+body.mod-setting .setting-general__savebar.is-open { border-color: var(--fh-crimson); }
+body.mod-setting .setting-general__savebar-text {
+  visibility: hidden;
+  color: var(--fh-text);
+  font-weight: 600;
+}
+body.mod-setting .setting-general__savebar.is-open .setting-general__savebar-text { visibility: visible; }
+body.mod-setting .setting-general__savebar-count { color: var(--fh-crimson); }
+body.mod-setting .setting-general__savebar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+body.mod-setting .setting-general__savebar-actions .btn,
+body.mod-setting .setting-general__savebar-actions button,
+body.mod-setting .setting-general__savebar-actions input[type="submit"] {
+  padding: 8px 22px;
+  background: var(--fh-crimson);
+  border: 1px solid var(--fh-crimson);
+  border-radius: var(--fh-radius-sm);
+  color: #fff;
+  font-weight: 500;
+}
+body.mod-setting .setting-general__savebar-actions .btn:hover,
+body.mod-setting .setting-general__savebar-actions button:hover,
+body.mod-setting .setting-general__savebar-actions input[type="submit"]:hover { background: var(--fh-crimson-700); }
+
+@media (max-width: 1280px) {
+  body.mod-setting .setting-general__group-body { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 1024px) {
+  body.mod-setting .setting-general { grid-template-columns: minmax(0, 1fr); }
+  body.mod-setting .setting-general__rail { position: static; }
+}
+@media (max-width: 900px) {
+  body.mod-setting .setting-general__support-head { display: none; }
+  body.mod-setting .setting-general__support-row { grid-template-columns: minmax(0, 1fr); }
+}

@@ -39,6 +39,9 @@
  *   source      tên nguồn option động do controller nạp vào 'select' (không query trong .tpl)
  *   json        giá trị là mảng → lưu json_encode, đọc ra json_decode
  *   multiple    select nhận nhiều giá trị
+ *   width       (images) bề ngang gợi ý sẵn trong ô nhập, px — mặc định DEFAULT_IMAGE_SIZE
+ *   height      (images) chiều cao gợi ý sẵn trong ô nhập, px — mặc định DEFAULT_IMAGE_SIZE
+ *   demo        (images) ảnh minh hoạ hiện khi chưa chọn ảnh nào
  *
  * Khóa lưu trữ là chuỗi phẳng, dùng đúng key đang có trên live (không prefix)
  * nên module này thay thẳng màn hình cũ mà không cần migrate dữ liệu.
@@ -47,6 +50,12 @@
  * minor, và toàn bộ codebase này không có chỗ nào dùng cú pháp 7.4+.
  */
 class ConfigDeclaration {
+	/** Kích thước điền sẵn cho field ảnh khi schema không khai width/height. */
+	const DEFAULT_IMAGE_SIZE = 40;
+	/** Kích thước ảnh lưu thành 2 key phụ cạnh key ảnh: <key>_width / <key>_height. */
+	const WIDTH_SUFFIX = '_width';
+	const HEIGHT_SUFFIX = '_height';
+
 	/** @var array|null Schema là hằng trong 1 request — dựng 1 lần rồi tái dùng. */
 	private static $system = null;
 
@@ -154,11 +163,14 @@ class ConfigDeclaration {
 		return $data;
 	}
 
-	/** Gom 1 field (và key phụ nếu là field ghép đôi) vào $data. */
+	/** Gom 1 field (và key phụ nếu là field ghép đôi / field ảnh) vào $data. */
 	private function collectField($field, $posted, &$data){
 		$keywords = array($field['keyword']);
 		if(!empty($field['pair_keyword'])){
 			$keywords[] = $field['pair_keyword'];
+		}
+		if(!empty($field['size_keywords'])){
+			$keywords = array_merge($keywords, $field['size_keywords']);
 		}
 		foreach($keywords as $keyword){
 			if(!array_key_exists($keyword, $posted)){
@@ -167,6 +179,11 @@ class ConfigDeclaration {
 				continue;
 			}
 			$value = $posted[$keyword];
+			if(!empty($field['size_keywords']) && in_array($keyword, $field['size_keywords'], true)){
+				// Kích thước luôn là số px; chặn chuỗi rác lọt vào thuộc tính width/height.
+				$data[$keyword] = (string) max(0, (int) $value);
+				continue;
+			}
 			if(!empty($field['json'])){
 				$data[$keyword] = json_encode(self::cleanList($value), JSON_UNESCAPED_UNICODE);
 				continue;
@@ -228,9 +245,28 @@ class ConfigDeclaration {
 				// Không có option nào để chọn → ẩn hẳn, giống {if !empty($list_block_types)} của bản cũ.
 				continue;
 			}
+			if($field['type'] === 'images'){
+				$field = self::withImageSize($field);
+			}
 			$fields[] = $field;
 		}
 		return $fields;
+	}
+
+	/**
+	 * Phần phụ của field ảnh: ảnh demo, kích thước mặc định và tên 2 key phụ.
+	 * Luôn có mặt để .tpl đọc thẳng mà không phải isset() từng key.
+	 * @return array
+	 */
+	private static function withImageSize($field){
+		$field['default_width'] = !empty($field['width']) ? (int) $field['width'] : self::DEFAULT_IMAGE_SIZE;
+		$field['default_height'] = !empty($field['height']) ? (int) $field['height'] : self::DEFAULT_IMAGE_SIZE;
+		$field['demo'] = isset($field['demo']) ? (string) $field['demo'] : '';
+		// Người dùng sửa được kích thước ngay trên form → 2 key phụ đi kèm key ảnh.
+		$field['width_keyword'] = $field['keyword'].self::WIDTH_SUFFIX;
+		$field['height_keyword'] = $field['keyword'].self::HEIGHT_SUFFIX;
+		$field['size_keywords'] = array($field['width_keyword'], $field['height_keyword']);
+		return $field;
 	}
 
 	/** @return bool */
@@ -322,23 +358,16 @@ class ConfigDeclaration {
 						'type'        => 'text',
 						'label'       => 'Email phòng công nghệ',
 						'placeholder' => 'Chọn hiển thị email phòng công nghệ màn login'
+					),
+					'test' => array(
+						'type'        => 'images',
+						'label'       => 'Images test',
+						'placeholder' => 'Images test',
+						'width'       => 160,
+						'height'      => 90,
+						'demo'        => '/application/themes/images/no-image.png'
 					)
-				)
-			),
-			'css' => array(
-				'label'       => 'Cấu hình giao diện',
-				'description' => 'Cấu hình giao diện web',
-				'slug'        => 'css',
-				'icon'        => 'check-circle',
-				'order'       => 20,
-				'value'       => array(
-					'font' => array(
-						'type'   => 'select',
-						'label'  => 'Font chữ toàn bộ trang web',
-						'select' => array(
-							'Be Vietnam Pro' => 'Be Vietnam Pro'
-						)
-					)
+					
 				)
 			),
 			'target' => array(
@@ -454,8 +483,9 @@ class ConfigDeclaration {
 						'type'  => 'text',
 						'label' => 'Tên ngân hàng'
 					),
+					/** Số tài khoản là chuỗi: có thể bắt đầu bằng số 0 và dài hơn giới hạn số nguyên. */
 					'bank_number_MOC' => array(
-						'type'  => 'number',
+						'type'  => 'text',
 						'label' => 'Tài khoản ngân hàng'
 					),
 					'bank_user_name_MOC' => array(
@@ -472,6 +502,8 @@ class ConfigDeclaration {
 					)
 				)
 			),
+			/** Giao diện do bản triển khai quyết định, không đổi từ admin nữa.
+			    Ẩn thay vì xoá để giữ nguyên giá trị đang có trong DB. */
 			'theme' => array(
 				'label'       => 'Giao diện',
 				'description' => 'Lựa chọn giao diện phù hợp cho website.',
@@ -479,6 +511,7 @@ class ConfigDeclaration {
 				'icon'        => 'list',
 				'order'       => 70,
 				'permission'  => 'dev',
+				'hidden'      => true,
 				'value'       => array(
 					'SiteTemplate' => array(
 						'type'   => 'select',
