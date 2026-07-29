@@ -56,7 +56,8 @@
 	<meta property="og:image" content="{$URL_IMAGES}/share.jpg?v={$upd_version}">
 	<meta property="og:image:width" content="1200">
 	<meta property="og:image:height" content="630">
-	<link rel="shortcut icon" type="image/x-icon" href="{$PCMS_URL}/favicon.ico?v={$upd_version}" />
+	{assign var=faviconUrl value=$clsConfiguration->getValue('favicon')}
+	<link rel="shortcut icon" href="{if $faviconUrl}{$faviconUrl|escape}{else}{$DOMAIN_URL}/favicon.ico{/if}?v={$upd_version}" type="image/x-icon" />
 	<link rel="apple-touch-icon" sizes="57x57" href="{$PCMS_URL}/apple-touch-icon-57x57.png" />
 	<link rel="apple-touch-icon" sizes="72x72" href="{$PCMS_URL}/apple-touch-icon-72x72.png" />
 	<link rel="apple-touch-icon" sizes="114x114" href="{$PCMS_URL}/apple-touch-icon-114x114.png" />
