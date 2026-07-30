@@ -1458,7 +1458,11 @@ function default_crawl_doc_sheet_by_link(){
 					foreach ($lstStockProject as $key => $val) {
 						$ms_code = isset($convert_arr[$val["code"]]) ? str_replace($val["code"],$convert_arr[$val["code"]],$val['ms_code']) : $val['ms_code'];
 						
-						preg_match('/(.*?)(\d+[A-Za-z]?)$/', $ms_code, $matches);
+						$matches = [];
+						if(!preg_match('/(.*?)(\d+[A-Za-z]?)$/', $ms_code, $matches)){
+							// ms_code cũ không có phần số ở cuối -> không tái tạo được, bỏ qua
+							continue;
+						}
 						// Cắt ký tự ngăn cách cuối tiền tố, nếu không mẫu "[MaDay]-[CanHo]" sẽ chèn
 						// thêm dấu lần nữa ("HG-01" -> prefix "HG-" -> "HG--01") và không khớp được.
 						$prefix = rtrim($matches[1], "-_ .");
@@ -1467,17 +1471,20 @@ function default_crawl_doc_sheet_by_link(){
 						//$ms_code = $prefix . $num;
 						$ms_code = str_replace("[MaDay]",$prefix,$stock_template);
 						$ms_code = str_replace("[CanHo]",$num,$ms_code);
-						// Lưu bản đã bỏ hết dấu ngăn cách để so khớp không phụ thuộc mẫu mã căn
-						$arr_stock_project[$val[$clsStock->pkey]] = $clsCrawl->getCodeNotTemplate($ms_code);
+						$arr_stock_project[$val[$clsStock->pkey]] = $ms_code;
 						$arr_stock_update[$val[$clsStock->pkey]] = $val;
 						unset($ms_code);
 					}
 				}
 				$total_upd = 0;
 				$kc = 0;
+				$failed = [];
 				foreach ($rows as $row) {
-					$range_value = trim($row[4]);
-					$build_code = trim($row[2]);
+					$range_value = isset($row[4]) ? trim($row[4]) : "";
+					$build_code = isset($row[2]) ? trim($row[2]) : "";
+					if ($range_value === "") {
+						continue;
+					}
 //					preg_match('/(.*?)(\d+[A-Za-z]?)$/', $range_value, $matches);
 //					$clsISO->print_pre($range_value);die;
 					$list_codes = [];
@@ -1534,10 +1541,12 @@ function default_crawl_doc_sheet_by_link(){
 						$list_codes[$ms_code] = $num;
 					}
 						
-					$block_id = isset($list_blocks_by_code[trim($row[1])]) 
-						? $list_blocks_by_code[trim($row[1])]['property_id'] : '';
-					$building_id = isset($list_builings_by_code[trim($row[2])]) 
-						? $list_builings_by_code[trim($row[2])]['property_id'] : '';
+					// Tra không ra thì để 0, không để '': các cột này là INT nên MySQL strict mode
+					// từ chối chuỗi rỗng và cả dòng bị mất trắng.
+					$block_id = isset($list_blocks_by_code[trim($row[1])])
+						? $list_blocks_by_code[trim($row[1])]['property_id'] : 0;
+					$building_id = isset($list_builings_by_code[trim($row[2])])
+						? $list_builings_by_code[trim($row[2])]['property_id'] : 0;
 					if(empty($building_id) && !empty($block_id) && trim($row[2]) != "") {
 						$check = $clsProperty->getByCond("`property_type`='_RANGE' AND `for_id`='{$block_id}' AND `property_code`='".trim($row[2])."'",$clsProperty->pkey);
 						if(!$check) {
@@ -1570,14 +1579,14 @@ function default_crawl_doc_sheet_by_link(){
 							? $type_low_floor_key_by_slug[$core->replaceSpace($row[5])]['property_id'] : 0);
 					}	
 					$direct_slug = $core->replaceSpace(trim($row[8]));
-					$direct = isset($home_direct_type_key_by_slug[$direct_slug]) 
-						? $home_direct_type_key_by_slug[$direct_slug]['property_id'] : '';
+					$direct = isset($home_direct_type_key_by_slug[$direct_slug])
+						? $home_direct_type_key_by_slug[$direct_slug]['property_id'] : 0;
 					$DT_TT = !empty(trim($row[6])) ? $clsISO->formatNumber2(trim($row[6])) : 0;
 					$DT_Tim = !empty(trim($row[7])) ? $clsISO->formatNumber2(trim($row[7])) : '';
 					// $clsISO->print_pre($more_information_save); die();
 					$arr_building_cached = [];
 					foreach($list_codes as $key_code=>$code) {
-						$stock_id = array_search($clsCrawl->getCodeNotTemplate($key_code), $arr_stock_project, true);
+						$stock_id = array_search($key_code, $arr_stock_project, true);
 						if (!empty($stock_id)) {
 							$more_information_save = $clsISO->to_array_json($arr_stock_update[$stock_id]["more_information"]);
 							$more_information_save["DT_TT"] = $DT_TT;
@@ -1606,6 +1615,12 @@ function default_crawl_doc_sheet_by_link(){
 								 if($clsStock->updateOne($stock_id, $data_update)){
 									 $kc ++;
 								 } else {
+									 $failed[] = [
+										 'act' => 'update',
+										 'ms_code' => $key_code,
+										 'stock_id' => $stock_id,
+										 'error' => $dbconn->ErrorMsg()
+									 ];
 //									 echo "<br>";
 //									 echo "Không update được ms_code: " . $key_code . " -> id: " . $stock_id;
 //									 echo "<br>";
@@ -1647,9 +1662,15 @@ function default_crawl_doc_sheet_by_link(){
 							 if($clsStock->insert($data_create)){
 								 $kc ++;
 								 // Ghi nhận mã vừa tạo: dòng sheet sau ra trùng mã sẽ update chứ không insert lại
-								 $arr_stock_project[$new_stock_id] = $clsCrawl->getCodeNotTemplate($key_code);
+								 $arr_stock_project[$new_stock_id] = $key_code;
 								 $arr_stock_update[$new_stock_id] = $data_create;
 							 } else {
+								 $failed[] = [
+									 'act' => 'insert',
+									 'ms_code' => $key_code,
+									 'stock_id' => $new_stock_id,
+									 'error' => $dbconn->ErrorMsg()
+								 ];
 //								  echo "<br>";
 //								 echo "Không insert được ms_code: " . $key_code;
 //								 $clsISO->print_pre($data_create);
@@ -1661,6 +1682,10 @@ function default_crawl_doc_sheet_by_link(){
 				$data_return = [
 					'status' => 200,
 					'msg' => 'Tạo bảng hàng thành công',
+					'total_generated' => count($data_save),
+					'total_saved' => $kc,
+					'total_failed' => count($failed),
+					'failed' => $failed,
 					'data' => $data_save
 				];
 			} else {

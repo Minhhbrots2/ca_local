@@ -557,10 +557,7 @@ function default_edit(){
         ),
     );
     $field = "{$clsProfile->pkey},full_name,first_name,last_name";
-    $list_admins = $clsProfile->getAll("`is_trash`=0 and `is_active`='1' and (`list_department_id` like '%|"._DEPARTMENT_BO_ID."|%' 
-		or`list_department_id` like '%|"._DEPARTMENT_TECH_ID."|%' 
-		or `list_department_id` like '%|"._DEPARTMENT_DIRECTOR_ID."|%'
-	)", $field);
+    $list_admins = $clsProfile->getAll("`is_trash`=0 and `is_active`='1'", $field);
     $list_profile = $clsProfile->getAll("`is_trash`=0 and status_id <> '"._STATUS_STAFF_OFF_ID."'", $field);
     $list_admin_id = $core->get_field($more_information, "list_admin_id", []);
     $arr_project_admins = $core->get_field($more_information, "project_admins", []);
