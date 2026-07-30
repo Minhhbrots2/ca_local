@@ -93,6 +93,13 @@
 		<link rel="preload" href="{$_oImg}" type="image/jpeg" as="image"  />
 		{/foreach}
 	{/if}
+	{literal}
+		<style>
+			:root {
+				--main-color: {/literal}{$header_configs.BrandColor}{literal}
+			}
+		</style>
+	{/literal}
 	<link rel="preload" href="{$URL_JS}/config.js?v={$upd_version}" as="script">
 	<link rel="preload" href="{$URL_THEMES}/vendor/js/helpers.js?v={$upd_version}" as="script">
 	<link rel="preload" href="{$URL_JS}/jquery-3.5.1.min.js?v={$upd_version}" as="script">
