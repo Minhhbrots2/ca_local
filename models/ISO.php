@@ -3002,6 +3002,80 @@ class ISO{
 			return 0;
 		}
 	}
+	/**
+	 * Tên block màn hình trang chủ của người đang đăng nhập.
+	 *
+	 * Vai trò/phòng ban của từng màn hình lấy từ Cấu hình hệ thống (nhóm home_screen).
+	 * Ô nào chưa cấu hình thì màn hình đó lùi về đúng nhóm quyền cũ, nên bản deploy
+	 * đầu tiên không đổi hành vi so với chuỗi elseif hardcode trong default.tpl.
+	 *
+	 * Thứ tự xét CỐ ĐỊNH, không cấu hình được: một người có thể khớp nhiều màn hình,
+	 * màn hình đứng trước thắng — giữ nguyên thứ tự ưu tiên đang chạy trên live.
+	 *
+	 * @return string Tên block; chuỗi rỗng nghĩa là dùng màn hình mặc định của nhân viên.
+	 */
+	function getHomeScreen(){
+		global $oneProfile, $profile_id;
+		$screens = array(
+			'home_screen_sale'       => array('SALE_DIRECTOR', 'HEAD_SALE', 'BUSINESS_AREA'),
+			'home_screen_director'   => array('DIRECTOR'),
+			'home_screen_admin'      => array('ADMIN_PROJECT'),
+			'home_screen_accountant' => array('ACCOUNTANT')
+		);
+		// Ngoại lệ theo từng người: ưu tiên màn Cấu hình hệ thống, chưa khai thì lấy fallback config.php.
+		$bypass = $this->getHomeScreenIds('home_screen_bypass_profiles', _PROFILE_HOME_DEFAULT_SCREEN_ID);
+		if(in_array((int) $profile_id, $bypass, true)){
+			return '';
+		}
+		$role_id = (int) $oneProfile['role_id'];
+		$department_id = (int) $oneProfile['department_id'];
+		foreach($screens as $block => $groups){
+			$roles = $this->getHomeScreenIds($block.'_roles');
+			$departments = $this->getHomeScreenIds($block.'_departments');
+			if(empty($roles) && empty($departments)){
+				// Màn hình chưa được cấu hình → giữ nguyên luật nhóm quyền mặc định.
+				if($this->matchPermissionGroup($groups)){
+					return $block;
+				}
+				continue;
+			}
+			if(in_array($role_id, $roles, true)){
+				return $block;
+			}
+			if(in_array($department_id, $departments, true)){
+				return $block;
+			}
+		}
+		return '';
+	}
+	/**
+	 * Danh sách id đã cấu hình cho 1 key của nhóm home_screen.
+	 * Chưa cấu hình (hoặc bị xoá trắng) thì trả về $default để luật cũ còn hiệu lực.
+	 * @return array
+	 */
+	function getHomeScreenIds($keyword, $default = array()){
+		global $clsConfiguration;
+		if(!is_object($clsConfiguration)){
+			return $default;
+		}
+		$ids = $clsConfiguration->getArray($keyword);
+		if(empty($ids)){
+			return $default;
+		}
+		return array_map('intval', $ids);
+	}
+	/**
+	 * Khớp ít nhất một nhóm quyền trong danh sách.
+	 * @return bool
+	 */
+	function matchPermissionGroup($groups){
+		foreach($groups as $group){
+			if((int) $this->checkPermissionGroup($group) === 1){
+				return true;
+			}
+		}
+		return false;
+	}
 	function checkSale(){
 		global $core, $dbconn, $oneProfile, $profile_id;
 		$department_id = $oneProfile['department_id'];

@@ -332,24 +332,68 @@ class Property extends dbBasic {
         }
         return $html;
     }
-	function getSelectFromSource($arrs, $block_id=0, $property_type='_BLOCK'){
-		$html = sprintf('<option>%s</option>', ($property_type=='_BLOCK'?'Chọn phân khu':'Chọn dãy'));
-		if(!empty($arrs)){
-			foreach($arrs as $key => $val){
-				if($property_type == '_BLOCK'){
-					$list_items = $val['list_blocks'];
-				} else if($property_type=='_RANGE') {
-					$list_items = $val['list_ranges'];
-				}
-				$html.= '<optgroup label="'.$val['title'].'">';
-				foreach($list_items as $okey => $oval){
-					$selected = ($block_id==$oval['property_id']) ? " selected" : "";
-					$html.= sprintf('<option value="%s"%s>%s</option>', $oval['property_id'], $selected, $oval['title']);
-				}
-				$html.='</optgroup>';
+	function getSelectFromSource($arrs, $selected_id=0, $property_type='_BLOCK'){
+		$is_block = ($property_type == '_BLOCK');
+		$html = sprintf('<option value="0">%s</option>', ($is_block ? 'Chọn phân khu' : 'Chọn dãy'));
+		if(empty($arrs)){
+			$arrs = $this->getSourceFallback($property_type);
+		}
+		if(empty($arrs)){
+			return $html;
+		}
+		$sub_key = $is_block ? 'list_blocks' : 'list_ranges';
+		$parent_key = $is_block ? 'project_id' : $this->pkey;
+		foreach($arrs as $val){
+			$list_items = isset($val[$sub_key]) ? $val[$sub_key] : array();
+			if(empty($list_items)){
+				$parent_id = isset($val[$parent_key]) ? (int) $val[$parent_key] : 0;
+				$list_items = $this->getChildBySource($property_type, $parent_id);
 			}
+			if(empty($list_items)){
+				continue;
+			}
+			$html.= '<optgroup label="'.htmlspecialchars($val['title'], ENT_QUOTES | ENT_SUBSTITUTE).'">';
+			foreach($list_items as $oval){
+				$item_id = $oval[$this->pkey];
+				$selected = ($selected_id == $item_id) ? ' selected' : '';
+				$html.= sprintf('<option value="%s"%s>%s</option>', $item_id, $selected, htmlspecialchars($oval['title'], ENT_QUOTES | ENT_SUBSTITUTE));
+			}
+			$html.='</optgroup>';
 		}
 		return $html;
+	}
+	/* Dựng lại mảng nút cha khi nơi gọi truyền vào rỗng. Gặp thật trên production: đoạn
+	   gán $arrBlock trong module không chạy nên cả cột dãy trắng trơn dù dữ liệu còn đủ.
+	   Chỉ dựng được cho _RANGE (cha là phân khu, suy ra từ dự án đang xem trên URL);
+	   _BLOCK có cha là dự án nên trả rỗng, giữ nguyên hành vi cũ. */
+	function getSourceFallback($property_type){
+		static $cached = array();
+		if(isset($cached[$property_type])){
+			return $cached[$property_type];
+		}
+		$cached[$property_type] = array();
+		if($property_type != '_RANGE'){
+			return $cached[$property_type];
+		}
+		$field = "{$this->pkey},title";
+		$project_id = class_exists('Input') ? (int) Input::get('project_id', 0) : 0;
+		if($project_id > 0){
+			// Không lọc is_trash để khớp đúng danh sách mà module vẫn dựng.
+			$cached[$property_type] = $this->getAll("`property_type`='_BLOCK' AND `for_id`='{$project_id}' ORDER BY `order_no` ASC", $field);
+		}
+		return $cached[$property_type];
+	}
+	function getChildBySource($property_type, $for_id){
+		static $cached = array();
+		if($for_id <= 0){
+			return array();
+		}
+		$key = $property_type.'_'.$for_id;
+		if(!isset($cached[$key])){
+			$field = "{$this->pkey},title";
+			$cached[$key] = $this->getAll("`property_type`='{$property_type}' AND `for_id`='{$for_id}' ORDER BY `order_no` ASC", $field);
+		}
+		return $cached[$key];
 	}
 	function getSelectByPropertyOrigin($type, $for_id=0, $selected = 0, $title="") {
 		global $core, $clsISO;

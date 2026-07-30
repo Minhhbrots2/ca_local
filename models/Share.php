@@ -229,6 +229,89 @@ class Share extends dbBasic {
 		@array_multisort($total, SORT_DESC, $resultArray);
 		return $resultArray;
 	}
+	/**
+	 * ID thư mục Drive của 1 khối. Ưu tiên giá trị admin nhập ở "Cấu hình hệ thống",
+	 * bỏ trống thì lùi về hằng số trong config.php để site không gãy khi chưa ai cấu hình.
+	 * @return string
+	 */
+	function getFolderId($block, $def=''){
+		$value = Configuration::getInstance()->getValue('gdrive_folder_'.$block, '');
+		$value = trim($value);
+		if($value === ''){
+			return $def;
+		}
+		return $this->parseFolderId($value);
+	}
+	/**
+	 * Tách ID khỏi chuỗi admin dán vào: ID trần, link thư mục (…/folders/<id>)
+	 * hoặc link dạng tham số (…?id=<id>) đều nhận.
+	 * @return string
+	 */
+	function parseFolderId($value){
+		if(preg_match('#/folders/([A-Za-z0-9_-]+)#', $value, $matches)){
+			return $matches[1];
+		}
+		if(preg_match('#[?&]id=([A-Za-z0-9_-]+)#', $value, $matches)){
+			return $matches[1];
+		}
+		return $value;
+	}
+	/**
+	 * Danh sách file trong 1 thư mục Drive, gọi thẳng API (không qua cache).
+	 * ID sai, mất quyền chia sẻ hay lỗi mạng đều chỉ trả null: khối ảnh trống
+	 * chứ tuyệt đối không để exception thoát ra làm trắng cả trang.
+	 * @return array|null
+	 */
+	function fetchDriveFiles($folder_id){
+		try {
+			$client = new Google_Client();
+			$client->setClientId(GOOGLE_CLIENT_ID);
+			$client->setClientSecret(GOOGLE_CLIENT_SECRET);
+			$client->refreshToken(GOOGLE_DRIVE_REFRESH_TOKEN);
+			$client->setScopes(Google_Service_Drive::DRIVE);
+			$service = new Google_Service_Drive($client);
+			return $this->get_files($service, $folder_id);
+		} catch(Throwable $e){
+			// Bắt Throwable chứ không chỉ Exception: thư viện Google có thể ném Error.
+			@error_log('Share::fetchDriveFiles ['.$folder_id.'] '.$e->getMessage());
+			return null;
+		}
+	}
+	/**
+	 * Nội dung cache JSON của 1 khối. File thiếu/hỏng coi như chưa có cache.
+	 * @return array
+	 */
+	function readCacheFile($cachedFile){
+		if(!file_exists($cachedFile)){
+			return array();
+		}
+		try {
+			$decoder = new Webmozart\Json\JsonDecoder();
+			$data = $decoder->decodeFile($cachedFile);
+			return is_array($data) ? $data : array();
+		} catch(Throwable $e){
+			@error_log('Share::readCacheFile ['.$cachedFile.'] '.$e->getMessage());
+			return array();
+		}
+	}
+	/**
+	 * Ghi cache kèm thư mục nguồn để lần sau biết cache thuộc thư mục nào.
+	 * Ghi hỏng (thiếu quyền, đầy đĩa) chỉ mất cache, không làm gãy trang.
+	 * @return void
+	 */
+	function writeCacheFile($cachedFile, $folder_id, $list_files){
+		try {
+			$encoder = new Webmozart\Json\JsonEncoder();
+			$data = [
+				"time"	=>	strtotime("+5 minutes"),
+				"folder_id"	=>	$folder_id,
+				"lst_file"	=>	$list_files
+			];
+			$encoder->encodeFile($data, $cachedFile);
+		} catch(Throwable $e){
+			@error_log('Share::writeCacheFile ['.$cachedFile.'] '.$e->getMessage());
+		}
+	}
 	function getIMG($block='honor'){
 		global $core, $dbconn, $clsISO, $profile_id;
 		$clsProjectMeta = new ProjectMeta();
@@ -237,53 +320,37 @@ class Share extends dbBasic {
 		###
 		if($block=='honor'){
 			$file_name = 'vinh-danh.json';
+			// Vinh danh chưa mở cho admin đổi thư mục — giữ nguyên hằng số.
 			$folder_id = GOOGLE_DRIVE_FOLDER_HONOR_ID;
 		} else if($block=='birthday'){
 			$file_name = 'birthday-cached.json';
-			$folder_id = GOOGLE_DRIVE_FOLDER_BIRTHDAY_ID;
+			$folder_id = $this->getFolderId('birthday', GOOGLE_DRIVE_FOLDER_BIRTHDAY_ID);
 		} else if($block=='wellcome'){
 			$file_name = 'wellcome-cached.json';
-			$folder_id = GOOGLE_DRIVE_FOLDER_WELLCOME_ID;
+			$folder_id = $this->getFolderId('wellcome', GOOGLE_DRIVE_FOLDER_WELLCOME_ID);
+		} else {
+			return [];
+		}
+		if($folder_id == ''){
+			return [];
 		}
 		$cachedFile = DIR_CACHE_JSON.DS.$file_name;
-		if(file_exists($cachedFile) ){
-			$decoder = new Webmozart\Json\JsonDecoder();
-			$dataCached = $decoder->decodeFile($cachedFile);
-			if($dataCached["time"] <= time()) {
-				/** Init Client */
-				$client = new Google_Client();
-				$client->setClientId(GOOGLE_CLIENT_ID);
-				$client->setClientSecret(GOOGLE_CLIENT_SECRET);
-				$client->refreshToken(GOOGLE_DRIVE_REFRESH_TOKEN);
-				$client->setScopes(Google_Service_Drive::DRIVE);
-				$service = new Google_Service_Drive($client);
-				/** End Client */
-				$list_files = $this->get_files($service, $folder_id);
-				$encoder = new Webmozart\Json\JsonEncoder();
-				$data = [
-					"time"	=>	strtotime("+5 minutes"),
-					"lst_file"	=>	$list_files
-				];
-				$encoder->encodeFile($data, $cachedFile);
-			} else {
-				$list_files = $dataCached['lst_file'];
+		$dataCached = $this->readCacheFile($cachedFile);
+		$list_files = isset($dataCached['lst_file']) ? $dataCached['lst_file'] : [];
+		$cached_folder = isset($dataCached['folder_id']) ? $dataCached['folder_id'] : '';
+		$cached_time = isset($dataCached['time']) ? (int) $dataCached['time'] : 0;
+		// Đổi thư mục ở màn cấu hình phải thấy ngay, không chờ hết 5 phút cache.
+		$is_expired = ($cached_time <= time() || $cached_folder !== $folder_id);
+		if($is_expired){
+			$fresh_files = $this->fetchDriveFiles($folder_id);
+			if($fresh_files !== null){
+				$list_files = $fresh_files;
+				$this->writeCacheFile($cachedFile, $folder_id, $list_files);
+			} else if($cached_folder !== $folder_id){
+				// Gọi Drive lỗi ngay sau khi đổi thư mục: cache đang giữ ảnh của thư
+				// mục cũ, hiển thị lại sẽ khiến admin tưởng ID mới đã chạy.
+				$list_files = [];
 			}
-		} else {
-			/** Init Client */
-			$client = new Google_Client();
-			$client->setClientId(GOOGLE_CLIENT_ID);
-			$client->setClientSecret(GOOGLE_CLIENT_SECRET);
-			$client->refreshToken(GOOGLE_DRIVE_REFRESH_TOKEN);
-			$client->setScopes(Google_Service_Drive::DRIVE);
-			$service = new Google_Service_Drive($client);
-			/** End Client */
-			$list_files = $this->get_files($service, $folder_id);
-			$encoder = new Webmozart\Json\JsonEncoder();
-			$data = [
-				"time"	=>	strtotime("+5 minutes"),
-				"lst_file"	=>	$list_files
-			];
-			$encoder->encodeFile($data, $cachedFile);
 		}
 		$list_images = [];
 		if(!empty($list_files)){

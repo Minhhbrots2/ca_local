@@ -21,7 +21,6 @@
  *       'description' => mô tả cột trái                   (bắt buộc)
  *       'slug'        => id neo CỐ ĐỊNH, độc lập label (đổi tên nhóm không gãy anchor)
  *       'icon'        => tên icon FontAwesome cạnh tiêu đề
- *       'order'       => số nguyên sắp xếp thứ tự nhóm trên trang
  *       'permission'  => key quyền; thiếu quyền thì ẩn nhóm LẪN field và bỏ qua khi POST
  *       'hidden'      => true → không render nhưng giữ nguyên dữ liệu trong DB
  *       'value'       => [ '<field_key>' => [ ... ] ]
@@ -102,17 +101,18 @@ class ConfigDeclaration {
 	}
 
 	/**
-	 * Chuẩn hóa danh sách nhóm cho view: lọc permission/hidden, sắp theo order,
-	 * tính sẵn slug, nạp option động. .tpl chỉ còn foreach.
+	 * Chuẩn hóa danh sách nhóm cho view: lọc permission/hidden, tính sẵn slug,
+	 * nạp option động. .tpl chỉ còn foreach.
+	 *
+	 * Thứ tự hiển thị = đúng thứ tự khai trong declaration(): muốn đổi vị trí
+	 * nhóm thì di chuyển khối khai báo, không có key sắp xếp riêng.
 	 *
 	 * @param array $sources ['<source_name>' => [k => v]] — option động do controller nạp
 	 * @return array
 	 */
 	public function normalize($sources = array()){
 		$groups = array();
-		$order = 0;
 		foreach($this->system() as $groupKey => $group){
-			$order++;
 			if(!empty($group['hidden'])){
 				continue;
 			}
@@ -133,11 +133,9 @@ class ConfigDeclaration {
 				// Dựng sẵn class icon để .tpl chỉ truyền biến vào makeIcon(),
 				// không phải ghép chuỗi bằng modifier trong template.
 				'icon_class'  => $icon.' mr-5',
-				'order'       => isset($group['order']) ? (int) $group['order'] : $order * 10,
 				'fields'      => $fields
 			);
 		}
-		usort($groups, array($this, 'compareOrder'));
 		return $groups;
 	}
 
@@ -289,14 +287,6 @@ class ConfigDeclaration {
 		return 'cfg-'.trim($slug, '-');
 	}
 
-	/** @return int */
-	private function compareOrder($a, $b){
-		if($a['order'] === $b['order']){
-			return 0;
-		}
-		return $a['order'] < $b['order'] ? -1 : 1;
-	}
-
 	/**
 	 * Quyền xem nhóm. Không khai 'permission' nghĩa là ai vào được trang thì xem được.
 	 * @return bool
@@ -327,7 +317,6 @@ class ConfigDeclaration {
 				'description' => 'Thông tin website được dùng để hiển thị và để khách hàng liên hệ đến bạn.',
 				'slug'        => 'general',
 				'icon'        => 'cog',
-				'order'       => 10,
 				'value'       => array(
 					'site_name' => array(
 						'type'        => 'text',
@@ -359,15 +348,38 @@ class ConfigDeclaration {
 						'label'       => 'Email phòng công nghệ',
 						'placeholder' => 'Chọn hiển thị email phòng công nghệ màn login'
 					),
-					'test' => array(
+					'CompanyLogo' => array(
 						'type'        => 'images',
-						'label'       => 'Images test',
-						'placeholder' => 'Images test',
-						'width'       => 160,
-						'height'      => 90,
+						'label'       => 'Company Logo',
+						'placeholder' => 'Company Logo',
+						'width'       => 100,
+						'height'      => 50,
+						'demo'        => '/application/themes/images/no-image.png'
+					),
+					'HeaderLogo' => array(
+						'type'        => 'images',
+						'label'       => 'Header Logo',
+						'placeholder' => 'Header Logo',
+						'width'       => 100,
+						'height'      => 50,
+						'demo'        => '/application/themes/images/no-image.png'
+					),
+					'LogoWhite' => array(
+						'type'        => 'images',
+						'label'       => 'Logo màu trắng',
+						'placeholder' => 'Company Logo',
+						'width'       => 100,
+						'height'      => 50,
+						'demo'        => '/application/themes/images/no-image.png'
+					),
+					'Favicon' => array(
+						'type'        => 'images',
+						'label'       => 'Favicon',
+						'placeholder' => 'Favicon',
+						'width'       => 100,
+						'height'      => 50,
 						'demo'        => '/application/themes/images/no-image.png'
 					)
-					
 				)
 			),
 			'target' => array(
@@ -375,7 +387,6 @@ class ConfigDeclaration {
 				'description' => 'Cấu hình điểm số cá nhân và toàn công ty.',
 				'slug'        => 'target',
 				'icon'        => 'check-circle',
-				'order'       => 20,
 				'value'       => array(
 					'total_transactions' => array(
 						'type'  => 'number',
@@ -387,12 +398,76 @@ class ConfigDeclaration {
 					)
 				)
 			),
+			/** Bản đồ vai trò → màn hình trang chủ, thay cho chuỗi elseif hardcode trong
+			    default.tpl. Thứ tự xét nằm trong ISO::getHomeScreen() và KHÔNG cấu hình
+			    được: một người khớp nhiều màn hình thì màn hình xét trước thắng. */
+			'home_screen' => array(
+				'label'       => 'Màn hình trang chủ',
+				'description' => 'Chọn vai trò được dùng từng màn hình trang chủ. Thứ tự xét cố định: GĐ Kinh doanh → Ban lãnh đạo → Admin dự án → Kế toán; ai không khớp màn hình nào thì dùng màn hình mặc định của nhân viên. Bỏ trống ô nào thì màn hình đó giữ nguyên vai trò mặc định của hệ thống.',
+				'slug'        => 'home-screen',
+				'icon'        => 'desktop',
+				'value'       => array(
+					'home_screen_sale_roles' => array(
+						'type'        => 'select2',
+						'label'       => 'Màn hình GĐ Kinh doanh',
+						'placeholder' => 'Chọn vai trò',
+						'multiple'    => true,
+						'json'        => true,
+						'source'      => 'role',
+						'help'        => 'Mặc định: GĐ Dự án, GĐ Kinh doanh, Trưởng phòng Kinh doanh, GĐ Vùng.'
+					),
+					'home_screen_director_roles' => array(
+						'type'        => 'select2',
+						'label'       => 'Màn hình Ban lãnh đạo',
+						'placeholder' => 'Chọn vai trò',
+						'multiple'    => true,
+						'json'        => true,
+						'source'      => 'role',
+						'help'        => 'Mặc định: Ban lãnh đạo, Tổng GĐ, Phó Tổng GĐ, Chủ tịch HĐQT.'
+					),
+					'home_screen_admin_roles' => array(
+						'type'        => 'select2',
+						'label'       => 'Màn hình Admin dự án — theo vai trò',
+						'placeholder' => 'Chọn vai trò',
+						'multiple'    => true,
+						'json'        => true,
+						'source'      => 'role',
+						'help'        => 'Mặc định màn hình này chỉ xét phòng ban, chưa xét vai trò nào.'
+					),
+					'home_screen_admin_departments' => array(
+						'type'        => 'select2',
+						'label'       => 'Màn hình Admin dự án — theo phòng ban',
+						'placeholder' => 'Chọn phòng ban',
+						'multiple'    => true,
+						'json'        => true,
+						'source'      => 'department',
+						'help'        => 'Mặc định: phòng Marketing. Khớp vai trò HOẶC phòng ban đều vào được màn hình này.'
+					),
+					'home_screen_accountant_roles' => array(
+						'type'        => 'select2',
+						'label'       => 'Màn hình Kế toán',
+						'placeholder' => 'Chọn vai trò',
+						'multiple'    => true,
+						'json'        => true,
+						'source'      => 'role',
+						'help'        => 'Mặc định: các vai trò kế toán khai trong _ROLE_ACCOUNTANT.'
+					),
+					'home_screen_bypass_profiles' => array(
+						'type'        => 'select2',
+						'label'       => 'Luôn dùng màn hình mặc định',
+						'placeholder' => 'Chọn nhân viên',
+						'multiple'    => true,
+						'json'        => true,
+						'source'      => 'profile',
+						'help'        => 'Nhân sự trong danh sách này bỏ qua toàn bộ màn hình theo vai trò ở trên.'
+					)
+				)
+			),
 			'robots' => array(
 				'label'       => 'Meta Robot',
 				'description' => 'Meta Robot cho phép Google bot thu thập nội dung website của bạn.',
 				'slug'        => 'robots',
 				'icon'        => 'search',
-				'order'       => 30,
 				'value'       => array(
 					'robots' => array(
 						'type'  => 'text',
@@ -409,7 +484,6 @@ class ConfigDeclaration {
 				'description' => 'Nhận thông báo Zalo khi có yêu cầu mua gói data khách hàng.',
 				'slug'        => 'notify',
 				'icon'        => 'cloud',
-				'order'       => 40,
 				'value'       => array(
 					'notify_zalo_recipient' => array(
 						'type'        => 'select2',
@@ -426,7 +500,6 @@ class ConfigDeclaration {
 				'description' => 'Mã nhúng của bên thứ ba: Google, Facebook, LiveChat. Dán nguyên đoạn script được cấp.',
 				'slug'        => 'tracking',
 				'icon'        => 'line-chart',
-				'order'       => 50,
 				'value'       => array(
 					'google_verity_key' => array(
 						'type'  => 'text',
@@ -456,12 +529,33 @@ class ConfigDeclaration {
 					)
 				)
 			),
+			/** Thư mục ảnh của các khối trang chủ. Bỏ trống thì Share::getFolderId()
+			    lùi về hằng số GOOGLE_DRIVE_FOLDER_*_ID trong config.php. */
+			'gdrive' => array(
+				'label'       => 'Thư mục Google Drive',
+				'description' => 'Thư mục chứa ảnh cho các khối ngoài trang chủ. Dán ID hoặc nguyên link thư mục Drive. Thư mục phải được chia sẻ cho tài khoản Drive của hệ thống, nếu không khối sẽ trống. Bỏ trống ô nào thì khối đó dùng thư mục mặc định của hệ thống.',
+				'slug'        => 'gdrive',
+				'icon'        => 'folder-open',
+				'value'       => array(
+					'gdrive_folder_birthday' => array(
+						'type'        => 'text',
+						'label'       => 'Khối Chúc mừng Sinh nhật',
+						'placeholder' => 'ID thư mục hoặc link, vd: 18VqAi5ifXOcwp_OX6pWbTB5UPuRGDnkX',
+						'help'        => 'Thư mục chứa thiệp sinh nhật nhân viên.'
+					),
+					'gdrive_folder_wellcome' => array(
+						'type'        => 'text',
+						'label'       => 'Khối Chào đón thành viên mới',
+						'placeholder' => 'ID thư mục hoặc link, vd: 1UeNKzHt4EU9xg66aSe9o9BUl8X8Fdo2Y',
+						'help'        => 'Thư mục chứa ảnh giới thiệu nhân sự mới gia nhập.'
+					)
+				)
+			),
 			'payment' => array(
 				'label'       => 'Thanh toán & Tín dụng',
 				'description' => 'Liên hệ tín dụng, tài khoản hỗ trợ MOC và tài khoản nhận thanh toán nâng cấp gói.',
 				'slug'        => 'payment',
 				'icon'        => 'credit-card',
-				'order'       => 60,
 				'value'       => array(
 					'zalo_credit' => array(
 						'type'  => 'text',
@@ -509,7 +603,6 @@ class ConfigDeclaration {
 				'description' => 'Lựa chọn giao diện phù hợp cho website.',
 				'slug'        => 'theme',
 				'icon'        => 'list',
-				'order'       => 70,
 				'permission'  => 'dev',
 				'hidden'      => true,
 				'value'       => array(
@@ -525,7 +618,6 @@ class ConfigDeclaration {
 				'description' => 'Khung giờ cho phép cập nhật bảng hàng trong ngày.',
 				'slug'        => 'worktime',
 				'icon'        => 'bars',
-				'order'       => 80,
 				'hidden'      => true,
 				'value'       => array(
 					'morning_start' => array(

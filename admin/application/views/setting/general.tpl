@@ -146,10 +146,42 @@
 			return _value.replace(/đ/g, 'd');
 		}
 
+		/* So sánh với giá trị lúc mở trang, không chỉ "đã gõ vào": sửa rồi hoàn
+		   nguyên thì field sạch trở lại và thanh lưu tự đóng. */
+		var $fields = $groups.find('.setting-general__field');
+		var _tracking = false;
+
+		function fieldState($field){
+			return $field.find('input, select, textarea').serialize();
+		}
+
+		/* Chốt mốc sau khi chosen/selectize dựng xong DOM. Chốt ngay trong ready
+		   thì phần widget thêm vào sau bị tính là thay đổi, thanh lưu mở sẵn. */
+		setTimeout(function(){
+			$fields.each(function(){
+				var $field = $(this);
+
+				$field.data('initState', fieldState($field));
+			});
+			_tracking = true;
+		}, 0);
+
 		/* Đếm field đã sửa để người dùng biết đang đổi những gì trước khi lưu. */
 		function refreshDirty(){
-			var _total = $groups.find('.setting-general__field.is-dirty').length;
+			var _total = 0;
 
+			if(!_tracking){
+				return;
+			}
+			$fields.each(function(){
+				var $field = $(this);
+				var _dirty = fieldState($field) !== $field.data('initState');
+
+				$field.toggleClass('is-dirty', _dirty);
+				if(_dirty){
+					_total++;
+				}
+			});
 			$('.setting-general__savebar-count').text(_total);
 			$saveBar.toggleClass('is-open', _total > 0);
 			$navItems.each(function(){
@@ -160,15 +192,12 @@
 			});
 		}
 
-		$groups.on('input change', 'input, select, textarea', function(){
-			var $field = $(this).closest('.setting-general__field');
+		$groups.on('input change', 'input, select, textarea', refreshDirty);
 
-			if(!$field.length){
-				return;
-			}
-			$field.addClass('is-dirty');
-			refreshDirty();
-		});
+		/* isoman (field ảnh) và chosen/selectize ghi thẳng vào value bằng JS,
+		   không bắn event nào lên form — không quét lại thì thanh lưu không mở
+		   và người dùng mất luôn đường lưu. */
+		setInterval(refreshDirty, 500);
 
 		/* Lọc theo nhãn + keyword. Field không khớp chỉ bị ẩn bằng CSS,
 		   vẫn nằm trong form nên giá trị cũ không bao giờ bị ghi rỗng. */
@@ -242,12 +271,16 @@
 			$('html, body').animate({ scrollTop: _top }, 220);
 		});
 
-		/* Ctrl+S lưu như mọi màn soạn thảo khác, không phải cuộn xuống cuối trang. */
+		/* Ctrl+S lưu như mọi màn soạn thảo khác, không phải cuộn xuống cuối trang.
+		   Chưa sửa gì thì bỏ qua, đúng như lúc thanh lưu đang ẩn. */
 		$(document).on('keydown', function(e){
 			if(!(e.ctrlKey || e.metaKey) || e.which !== 83){
 				return;
 			}
 			e.preventDefault();
+			if(!$saveBar.hasClass('is-open')){
+				return;
+			}
 			$saveBar.find('button, input[type="submit"]').first().click();
 		});
 	});

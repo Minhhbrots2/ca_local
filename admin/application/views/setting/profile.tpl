@@ -7,63 +7,29 @@
     <form method="post" action="" enctype="multipart/form-data" class="validate-form">
         <div class="cfg-grid">
             <div class="cfg-main">
-                <section class="cfg-card">
-                    <h3 class="cfg-card__title"><i class="fa fa-money"></i> Giao dịch</h3>
-                    <div class="cfg-row">
-                        <label class="cfg-row__label">Duyệt giao dịch</label>
-                        <div class="cfg-row__control cfg-imgfield">
-                            <div class="form-row flex-fill">
-								{assign var=confirm_billing value= $clsISO->to_array_json($clsConfiguration->getValue('confirm_billing'))}
-								{assign var=gId value=$clsISO->getUniqId()}
-								<div class="col-12 col-md-6 col-lg-4">
-									<select name="iso-confirm_billing[name]" class="form-control form-select" onChange="$Core.setting.loadStaffConfirm(this,event)" toId="{$gId}" >
-										<option value="">Chọn đối tượng duyệt</option>
-										<option value="admin" {if $confirm_billing.name eq 'admin'}selected{/if} >Admin duyệt</option>
-										<option value="project_manager" {if $confirm_billing.name eq 'project_manager'}selected{/if} >Giám đốc dự án duyệt</option>
-									</select>
-								</div>
-								<div class="col-12 col-md-6 col-lg-4">
-									<select class="form-control {if $confirm_billing.name ne 'admin'}d-none{/if}" name="iso-confirm_billing[staff_id]" id="{$gId}">
-										<option value="">Chọn admin duyệt</option>
-										{if !empty($lstAdmin)}
-											{foreach from=$lstAdmin item=_oItem key=key name=i}
-												<option value="{$_oItem.profile_id}" {if $confirm_billing.staff_id eq $_oItem.profile_id}selected{/if} >{$_oItem.full_name}</option>
-											{/foreach}
-										{/if}
-									</select>
-								</div>
-							</div>
-                        </div>
-                    </div>
-                    <div class="cfg-row">
-                        <label class="cfg-row__label">Phòng ban không xếp hạng (bao gồm bxh cá nhân, phòng ban)</label>
-                        <div class="cfg-row__control cfg-imgfield">
-                            <div class="form-row flex-fill">
-								<div class="col-12 col-md-6 col-lg-6">
-									<select class="w-100 form-select form-control iso-select2" multiple data-width="100%" name="iso-department_not_rankking[]" id="department_id">
-										{$clsProperty->getSelectByPropertyV2('_DEPARTMENT', $clsISO->to_array_json($clsConfiguration->getValue('department_not_rankking')),'Phòng ban')}
-									</select>
-								</div>
-								<div class="col-12 col-md-6 col-lg-6">
-									<select class="w-100 form-select form-control iso-select2" multiple data-width="100%" name="iso-role_not_rankking[]" id="role_id">
-										{$clsProperty->getSelectByPropertyV2('_ROLE',$clsISO->to_array_json($clsConfiguration->getValue('role_not_rankking')),'Vai trò')}
-									</select>
-								</div>
-							</div>
-                        </div>
-                    </div>
-                </section>
+				{if 1 eq 2}
                 <section class="cfg-card">
                     <h3 class="cfg-card__title"><i class="fa fa-picture-o"></i> {$core->get_Lang('logo')}</h3>
-                    {include file="./_cfg_image.tpl" keyword="CompanyLogo" for_id="image" label=$core->get_Lang('Email Logo')}
-                    {include file="./_cfg_image.tpl" keyword="HeaderLogo" for_id="image_Fx" label=$core->get_Lang('Header Logo')}
-                    {include file="./_cfg_image.tpl" keyword="LogoWhite" for_id="image_Wht" label="Logo màu trắng"}
-                    {if 1 eq 2}
-                    {include file="./_cfg_image.tpl" keyword="HeaderLogoPage" for_id="image_Fx1" label="`$core->get_Lang('Header Logo')` (Page In)"}
-                    {include file="./_cfg_image.tpl" keyword="FooterLogo" for_id="image_Fx2" label=$core->get_Lang('Footer Logo')}
-                    {/if}
+                    <div class="cfg-row">
+                        <label class="cfg-row__label">{$core->get_Lang('Header Logo')} (Page In)</label>
+                        <div class="cfg-row__control cfg-imgfield">
+                            <img class="isoman_img_pop" id="isoman_show_image_Fx1" src="{$clsConfiguration->getValue('HeaderLogoPage')}" />
+                            <input type="hidden" id="isoman_hidden_image_Fx1" value="{$clsConfiguration->getValue('HeaderLogoPage')}">
+                            <input class="cfg-input" type="text" id="isoman_url_image_Fx1" name="iso-HeaderLogoPage" value="{$clsConfiguration->getValue('HeaderLogoPage')|escape}">
+                            <a href="#" class="ajOpenDialog cfg-pick" isoman_for_id="image_Fx1" isoman_val="{$clsConfiguration->getValue('HeaderLogoPage')}" isoman_name="image"><img src="{$URL_IMAGES}/general/folder-32.png" border="0" title="Open" alt="Open"></a>
+                        </div>
+                    </div>
+                    <div class="cfg-row">
+                        <label class="cfg-row__label">{$core->get_Lang('Footer Logo')}</label>
+                        <div class="cfg-row__control cfg-imgfield">
+                            <img class="isoman_img_pop" id="isoman_show_image_Fx2" src="{$clsConfiguration->getValue('FooterLogo')}" />
+                            <input type="hidden" id="isoman_hidden_image_Fx2" value="{$clsConfiguration->getValue('FooterLogo')}">
+                            <input class="cfg-input" type="text" id="isoman_url_image_Fx2" name="iso-FooterLogo" value="{$clsConfiguration->getValue('FooterLogo')|escape}">
+                            <a href="#" class="ajOpenDialog cfg-pick" isoman_for_id="image_Fx2" isoman_val="{$clsConfiguration->getValue('FooterLogo')}" isoman_name="image"><img src="{$URL_IMAGES}/general/folder-32.png" border="0" title="Open" alt="Open"></a>
+                        </div>
+                    </div>
                 </section>
-
+ 				{/if}
                 <section class="cfg-card">
                     <h3 class="cfg-card__title"><i class="fa fa-star"></i> Nhận diện thương hiệu</h3>
                     <div class="cfg-row">
@@ -78,7 +44,6 @@
                             <input class="cfg-input" type="text" name="iso-checkin_brand_name" placeholder="Vd: Future Way (để trống = mặc định)" value="{$clsConfiguration->getValue('checkin_brand_name')|escape}">
                         </div>
                     </div>
-                    {include file="./_cfg_image.tpl" keyword="Favicon" for_id="image_Fx3" label="Favicon"}
                     <div class="cfg-row">
                         <label class="cfg-row__label">Màu thương hiệu</label>
                         <div class="cfg-row__control">
@@ -190,7 +155,7 @@
 </script>
 {literal}
 <script type="text/javascript">
-    /*var geocoder = new google.maps.Geocoder();
+    var geocoder = new google.maps.Geocoder();
     var map;
     var marker;
     function $getID(id) {
@@ -257,6 +222,6 @@
             showAddress(address);
             return false;
         });
-    });*/
+    });
 </script>
 {/literal}

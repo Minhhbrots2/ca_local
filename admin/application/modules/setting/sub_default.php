@@ -890,7 +890,9 @@ function config_general_sources(){
 	$sources = array(
 		'profile'      => array(),
 		'block_type'   => array(),
-		'app_template' => array()
+		'app_template' => array(),
+		'role'         => array(),
+		'department'   => array()
 	);
 	$clsProfile = new Profile();
 	$field = "{$clsProfile->pkey},full_name";
@@ -905,6 +907,19 @@ function config_general_sources(){
 	if(!empty($list_block_types)){
 		foreach($list_block_types as $_oBlock){
 			$sources['block_type'][$_oBlock['property_id']] = $_oBlock['title'];
+		}
+	}
+	/** Vai trò và phòng ban dùng cho nhóm "Màn hình trang chủ"; danh sách phẳng, đã theo order_no. */
+	$list_roles = $clsProperty->getCacheItems('_ROLE');
+	if(!empty($list_roles)){
+		foreach($list_roles as $_oRole){
+			$sources['role'][$_oRole['property_id']] = $_oRole['title'];
+		}
+	}
+	$list_departments = $clsProperty->getCacheItems('_DEPARTMENT');
+	if(!empty($list_departments)){
+		foreach($list_departments as $_oDepartment){
+			$sources['department'][$_oDepartment['property_id']] = $_oDepartment['title'];
 		}
 	}
 	/** Danh sách giao diện do tầng khác nạp; không có thì nhóm Giao diện tự ẩn */

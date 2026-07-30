@@ -2589,30 +2589,27 @@ body.mod-setting .setting-general__empty {
 body.mod-setting .setting-general__empty.is-open { display: block; }
 
 /* ---------- thanh lưu bám đáy ----------
-   Luôn hiện: nút Lưu phải có mặt kể cả khi chưa sửa gì. Chỉ phần đếm
-   thay đổi mới bật/tắt, và ẩn bằng visibility để thanh không nhảy cao. */
+   Chỉ hiện khi có field khác giá trị ban đầu (JS bật .is-open), để không ai
+   bấm Lưu khi chưa sửa gì. Ẩn bằng display nên thanh không chiếm chỗ trống. */
 body.mod-setting .setting-general__savebar {
+  display: none;
   position: sticky;
   bottom: 16px;
   z-index: 20;
-  display: flex;
   align-items: center;
   gap: 14px;
   margin-top: 16px;
   padding: 10px 16px;
   background: var(--fh-card);
-  border: 1px solid var(--fh-border);
+  border: 1px solid var(--fh-crimson);
   border-radius: var(--fh-radius);
   box-shadow: var(--fh-shadow-md);
-  transition: border-color .18s;
 }
-body.mod-setting .setting-general__savebar.is-open { border-color: var(--fh-crimson); }
+body.mod-setting .setting-general__savebar.is-open { display: flex; }
 body.mod-setting .setting-general__savebar-text {
-  visibility: hidden;
   color: var(--fh-text);
   font-weight: 600;
 }
-body.mod-setting .setting-general__savebar.is-open .setting-general__savebar-text { visibility: visible; }
 body.mod-setting .setting-general__savebar-count { color: var(--fh-crimson); }
 body.mod-setting .setting-general__savebar-actions {
   display: flex;

@@ -2,7 +2,7 @@
     <div class="app-brand demo">
         <a href="{$PCMS_URL}" class="app-brand-link pb-1 mx-auto d-flex flex-column justify-content-center">
             <span class="app-brand-logo demo">
-				<img src="{$URL_IMAGES}/logo-header.png" height="50" alt="{$PAGE_NAME}" />
+				<img src="{$clsConfiguration->getValue('HeaderLogo')}" height="{$clsConfiguration->getImageHeight('HeaderLogo')}" alt="{$header_configs.CompanyName}" />
 			</span>
         </a>
         <a href="javascript:void(0);" class="layout-menu-toggle menu-link text-large ms-auto d-block">

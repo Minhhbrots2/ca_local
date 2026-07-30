@@ -90,34 +90,16 @@
 			{*$core->getBlock('home_news')*}
 		{/if}
 		<div class="clearfix"></div>
-	{if $clsISO->checkPermissionGroup('SALE_DIRECTOR') eq '1' || $clsISO->checkPermissionGroup('HEAD_SALE') eq '1' || $clsISO->checkPermissionGroup('BUSINESS_AREA') eq '1'}		
-		{if $deviceType ne 'phone'}
-			{$core->getBlock('block_honor')}
-		{/if}
-		<div class="clearfix"></div>
-		{$core->getBlock('home_screen_sale')}
-	{elseif $clsISO->checkPermissionGroup('DIRECTOR') && $profile_id ne '212'}
-		{if $deviceType ne 'phone'}
-			{$core->getBlock('block_honor')}
-		{/if}
-		<div class="clearfix"></div>
-		{$core->getBlock('home_screen_director')}
-	{elseif $clsISO->checkPermissionGroup('ADMIN_PROJECT')}
-		{if $deviceType ne 'phone'}
-			{$core->getBlock('block_honor')}
-		{/if}
-		{$core->getBlock('home_screen_admin')}
-	{elseif $clsISO->checkPermissionGroup('ACCOUNTANT')}
-		{if $deviceType ne 'phone'}
-			{$core->getBlock('block_honor')}
-		{/if}
-		<div class="clearfix"></div>
-		{$core->getBlock('home_screen_accountant')}
+	{if $deviceType ne 'phone'}
+		{$core->getBlock('block_honor')}
+	{/if}
+	<div class="clearfix"></div>
+	{* Bản đồ vai trò → màn hình nằm ở nhóm "Màn hình trang chủ" trong Cấu hình hệ thống;
+	   ISO::getHomeScreen() chốt thứ tự ưu tiên, trả rỗng nghĩa là màn hình mặc định. *}
+	{assign var = home_screen value = $clsISO->getHomeScreen()}
+	{if $home_screen ne ''}
+		{$core->getBlock($home_screen)}
 	{else}
-		{if $deviceType ne 'phone'}
-			{$core->getBlock('block_honor')}
-		{/if}
-		<div class="clearfix"></div>
 		{if $clsISO->checkSale() && 1==2}
 			{$core->getBlock('ranking-staff')}
 		{/if}

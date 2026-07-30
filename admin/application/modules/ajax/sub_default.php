@@ -817,6 +817,7 @@ function default_save_property(){
 		}
 	}else{
 		$cond = "is_trash=0 and parent_id='{$parent_id}' and property_type='{$property_type}'";
+
 		if($for_id > 0) $cond .= " and for_id='{$for_id}'";
 		if($clsProperty->countItem("{$cond} and slug='{$slug}'") > 0){
 			echo '_invalid'; 
@@ -1458,18 +1459,22 @@ function default_crawl_doc_sheet_by_link(){
 						$ms_code = isset($convert_arr[$val["code"]]) ? str_replace($val["code"],$convert_arr[$val["code"]],$val['ms_code']) : $val['ms_code'];
 						
 						preg_match('/(.*?)(\d+[A-Za-z]?)$/', $ms_code, $matches);
-						$prefix = $matches[1];
+						// Cắt ký tự ngăn cách cuối tiền tố, nếu không mẫu "[MaDay]-[CanHo]" sẽ chèn
+						// thêm dấu lần nữa ("HG-01" -> prefix "HG-" -> "HG--01") và không khớp được.
+						$prefix = rtrim($matches[1], "-_ .");
 						$num = $matches[2];
 						$num = isset($convert_arr[$clsISO->parseNumber($num)]) ? $convert_arr[$clsISO->parseNumber($num)] : $num;
 						//$ms_code = $prefix . $num;
 						$ms_code = str_replace("[MaDay]",$prefix,$stock_template);
 						$ms_code = str_replace("[CanHo]",$num,$ms_code);
-						$arr_stock_project[$val[$clsStock->pkey]] = $ms_code;
+						// Lưu bản đã bỏ hết dấu ngăn cách để so khớp không phụ thuộc mẫu mã căn
+						$arr_stock_project[$val[$clsStock->pkey]] = $clsCrawl->getCodeNotTemplate($ms_code);
 						$arr_stock_update[$val[$clsStock->pkey]] = $val;
 						unset($ms_code);
 					}
 				}
 				$total_upd = 0;
+				$kc = 0;
 				foreach ($rows as $row) {
 					$range_value = trim($row[4]);
 					$build_code = trim($row[2]);
@@ -1483,20 +1488,27 @@ function default_crawl_doc_sheet_by_link(){
 						$end_full = $arr[1];
 						$matches = [];
 						$prefix = $build_code;
-						$start_num = substr_replace($start_full, '', 0, strlen($build_code));
-						$start = $start_num;
-						$end = $end_full;
+						$start = $start_full;
+						$build_code_norm = $clsCrawl->getCodeNotTemplate($build_code);
+						if ($build_code_norm != "" && strpos($start, $build_code_norm) === 0) {
+							$start = substr($start, strlen($build_code_norm));
+						}
+						if (!ctype_digit($start)) {
+							$start = preg_match('/(\d+)$/', $start, $matches_start) ? $matches_start[1] : "";
+						}
 						$step = 1;
-						$subs = ["(lẻ)", "le", "l", "L", "(chẵn)", "chan", "c", "C"];
+						$subs = ["lẻ", "le", "l", "chẵn", "chan", "c"];
+						$end_lower = trim($end_full);
+						$end_lower = function_exists('mb_strtolower') ? mb_strtolower($end_lower, 'UTF-8') : strtolower($end_lower);
 						foreach ($subs as $sub) {
-							if (str_contains($end, $sub)) {
+							if (strpos($end_lower, $sub) !== false) {
 								$step = 2;
 								break;
 							}
 						}
-						$end = str_replace($subs, "", $end);
+						$end = preg_replace('/[^0-9]/', '', $end_full);
 
-						if (ctype_digit($end)) {
+						if ($start !== "" && $end !== "") {
 							$start_int = (int)$start;
 							$end_int = (int)$end;
 
@@ -1513,7 +1525,7 @@ function default_crawl_doc_sheet_by_link(){
 						$build_code = trim($row[2]);
 						$prefix = $build_code;
 						$num = substr_replace($range_value, '', 0, strlen($build_code));
-						$num = ltrim($num, "-_ .");
+						$num = preg_replace('/^[^0-9A-Za-z]+/u', '', $num);
 						$num = isset($convert_arr[$clsISO->parseNumber($num)]) ? $convert_arr[$clsISO->parseNumber($num)] : $num;
 
 						//$ms_code = $prefix . $num;
@@ -1565,12 +1577,12 @@ function default_crawl_doc_sheet_by_link(){
 					// $clsISO->print_pre($more_information_save); die();
 					$arr_building_cached = [];
 					foreach($list_codes as $key_code=>$code) {
-						$stock_id = array_search($key_code,$arr_stock_project,true);
+						$stock_id = array_search($clsCrawl->getCodeNotTemplate($key_code), $arr_stock_project, true);
 						if (!empty($stock_id)) {
 							$more_information_save = $clsISO->to_array_json($arr_stock_update[$stock_id]["more_information"]);
 							$more_information_save["DT_TT"] = $DT_TT;
 							$more_information_save["DT_Tim"] = $DT_Tim;
-							$more_information_save["home_direction_id"] = $home_direction_id;
+							$more_information_save["home_direction_id"] = $direct;
 							$more_information_save["type_id"] = $type;
 							$ms_code = $key_code;
 							$data_update = [
@@ -1610,8 +1622,9 @@ function default_crawl_doc_sheet_by_link(){
 								'home_direction_id' => $direct,
 								'type_id' => $type
 							];
+							$new_stock_id = $clsStock->getMaxId();
 							$data_create = [
-								"{$clsStock->pkey}"	=>	$clsStock->getMaxId(),
+								"{$clsStock->pkey}"	=>	$new_stock_id,
 								'stock_type' => _BLOCK_TYPE_LOWFLOOR_SALE,
 								'project_id' => $project_id,
 								'block_id' => $block_id,
@@ -1633,6 +1646,9 @@ function default_crawl_doc_sheet_by_link(){
 //							$dbconn->debug=true;
 							 if($clsStock->insert($data_create)){
 								 $kc ++;
+								 // Ghi nhận mã vừa tạo: dòng sheet sau ra trùng mã sẽ update chứ không insert lại
+								 $arr_stock_project[$new_stock_id] = $clsCrawl->getCodeNotTemplate($key_code);
+								 $arr_stock_update[$new_stock_id] = $data_create;
 							 } else {
 //								  echo "<br>";
 //								 echo "Không insert được ms_code: " . $key_code;
@@ -1660,6 +1676,8 @@ function default_crawl_doc_sheet_by_link(){
             'msg' => 'Cần chọn sheet cấu hình',
         ];
     }
+	// Dấu hiệu build: đặt lên đầu response để không phải cuộn qua mảng data mới thấy
+	$data_return = array_merge(array('build' => '2026-07-30-fix-le-chan'), $data_return);
     echo json_encode($data_return); die();
 }
 function default_open_setting_update_table(){
