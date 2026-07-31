@@ -1343,21 +1343,24 @@ function default_profile(){
 	$lstAdmin = $clsProfile->getAll("`is_trash`=0 AND `status_id` = '"._STATUS_STAFF_ON_ID."' AND (`role_id`='"._ROLE_STAFF_ADMIN."' OR `role_id`='"._ROLE_STAFF_LEADER_ADMIN."')");
 //	$lstAdmin = $clsProfile->getAll("`is_trash`=0 AND `status_id` = '"._STATUS_STAFF_ON_ID."'");
 	$assign_list["lstAdmin"] = $lstAdmin;
-	if(isset($_POST['submit']) && $_POST['submit']='CompanyProfile'){
-		foreach($_POST as $key=>$val){
-			$tmp = explode('-',$key);
-			if($tmp[0]=='iso'){
-				if(is_array($val)) {
-					$clsConfiguration->updateValue($tmp[1],json_encode($val,JSON_UNESCAPED_UNICODE));
-				}else if(config_profile_is_size_key($tmp[1])){
-					// Kích thước ảnh luôn là số px; chặn chuỗi rác lọt vào thuộc tính width/height.
-					$clsConfiguration->updateValue($tmp[1],(string) max(0, (int) $val));
-				}else{
-					$clsConfiguration->updateValue($tmp[1],$val);
-				}
+	if(isset($_POST['submit']) && $_POST['submit'] == 'CompanyProfile'){
+		$data = array();
+		foreach($_POST as $key => $val){
+			$tmp = explode('-', $key);
+			if($tmp[0] != 'iso' || !isset($tmp[1])){
+				continue;
+			}
+			if(is_array($val)){
+				$data[$tmp[1]] = json_encode($val, JSON_UNESCAPED_UNICODE);
+			} else if(config_profile_is_size_key($tmp[1])){
+				$data[$tmp[1]] = (string) max(0, (int) $val);
+			} else {
+				$data[$tmp[1]] = $val;
 			}
 		}
+		$clsConfiguration->saveBatch($data, (int) $core->_USER['user_id']);
 		header('location:'.PCMS_URL.'?mod=setting&act=profile&message=updateSuccess');
+		exit();
 	}
 }
 /**

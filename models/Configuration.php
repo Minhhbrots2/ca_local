@@ -21,6 +21,8 @@
  */
 class Configuration extends DbBasic {
 	const CACHE_KEY = 'CONFIGURATION_ALL';
+	/** Snapshot phái sinh dựng ở application/_header.php — lưu cấu hình phải xoá kèm. */
+	const CACHE_KEY_HEADER = '_header_configs_cached';
 
 	/** @var array|null Cache cả bộ cấu hình — getValue() gọi 500 lần vẫn 1 query. */
 	private static $store = null;
@@ -183,10 +185,12 @@ class Configuration extends DbBasic {
 		if($client === null){
 			return;
 		}
-		try {
-			$client->delete(self::CACHE_KEY);
-		} catch(Exception $e){
-			// Redis lỗi thì cache tĩnh đã xoá ở trên, request sau đọc lại từ DB.
+		foreach(array(self::CACHE_KEY, self::CACHE_KEY_HEADER) as $cacheKey){
+			try {
+				$client->delete($cacheKey);
+			} catch(Exception $e){
+				// Redis lỗi thì cache tĩnh đã xoá ở trên, request sau đọc lại từ DB.
+			}
 		}
 	}
 

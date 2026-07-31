@@ -1,6 +1,6 @@
 <div class="sky-auth__brand">
 	<div class="sky-auth__logo">
-		<img class="sky-brand-logo" src="{$URL_IMAGES}/logo-header.png" alt="{$BRAND_NAME}" />
+		<img width="{$clsConfiguration->getImageWidth('LogoWhite')}" height="{$clsConfiguration->getImageHeight('LogoWhite')}" class="sky-brand-logo" src="{$clsConfiguration->getValue('LogoWhite')}" alt="{$BRAND_NAME}" />
 	</div>
 	<div class="sky-auth__brand-body">
 		<div class="sky-auth__badge"><i class='bx bxs-quote-alt-right'></i> Giá trị cốt lõi</div>

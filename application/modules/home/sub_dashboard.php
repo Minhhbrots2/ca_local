@@ -1897,7 +1897,7 @@ function dashboard_load_report_share(){
 }
 function dashboard_top_billing(){
 	global $smarty,$_CONFIG,$core,$dbconn,$mod,$act,$_LANG_ID,$clsISO;
-	global $oneProfile, $profile_id, $deviceType;
+	global $oneProfile, $profile_id, $deviceType, $clsConfiguration;
 	$clsCache = new Cache();
 	$clsProfile = new Profile();
 	$clsBilling = new Billing();
@@ -1942,7 +1942,7 @@ function dashboard_top_billing(){
 		}
 	}
 	$data['type'] = 'bar';
-	$data['color'] = '#1d446b';
+	$data['color'] = $clsConfiguration->getValue('BrandColor');
 	$data['indexLabel'] = '{y}';
 	$data['title']['fontColor'] = 'rgb(159,34,58)';
 	$data['toolTipContent'] = 'Số lượng GD: {total}<br /> Doanh số: {y}';
@@ -1961,7 +1961,7 @@ function dashboard_top_billing(){
 }
 function dashboard_chart_billing_type(){
 	global $smarty,$_CONFIG,$core,$dbconn,$mod,$act,$_LANG_ID,$clsISO;
-	global $oneProfile, $profile_id;
+	global $oneProfile, $profile_id, $clsConfiguration;
 	$clsLog = new Log();
 	$clsCache = new Cache();
 	$clsProfile = new Profile();
@@ -2017,7 +2017,7 @@ function dashboard_chart_billing_type(){
 		}
 	}
 	$data['type'] = 'column';
-	$data['color'] = '#1d446b';
+	$data['color'] = $clsConfiguration->getValue('BrandColor');
 	$data['indexLabel'] = '{y}';
 	$data['title']['fontColor'] = 'rgb(159,34,58)';
 	$data['toolTipContent'] = '{label}<br /> Số lượng: {total} GD <br /> Doanh số: {y}';

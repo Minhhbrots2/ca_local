@@ -964,7 +964,7 @@ body.computer .fh_AI {
 	-moz-border-radius: 50%;
 	-webkit-border-radius: 50%;
 	-khtml-border-radius: 50%;
-	border-top: 3px solid var(--bs-main);
+	border-top: 3px solid var(--sky-primary);
 	width: 80px;
 	height: 80px;
 	animation: spinner 2s linear infinite;
@@ -3366,8 +3366,8 @@ input:checked+.slider:before {
 /** CSS Ranking */
 .ranking {
 	position: relative;
-	background: var(--bs-main);
-	background: linear-gradient(6deg, rgb(29 67 106) 44%, rgb(53 107 160) 100%);
+	background: var(--sky-primary);
+	background: linear-gradient(6deg, var(--rank-1) 44%, var(--rank-2));
 }
 
 .rank__block-menu {
@@ -3393,12 +3393,12 @@ input:checked+.slider:before {
 }
 
 .rank__tab-panel>.btn-check:checked+.btn-ranking {
-	background: var(--bs-main) !important;
+	background: var(--sky-primary) !important;
 }
 
 .rank__tab-menu {
 	min-width: 80%;
-	background: var(--bs-main);
+	background: var(--sky-primary);
 	border-radius: 5px;
 	-moz-border-radius: 5px;
 	-webkit-border-radius: 5px;
@@ -3469,8 +3469,8 @@ input:checked+.slider:before {
 .rank__block-item.rank__top-one {
 	order: 2;
 	height: 120px;
-	background: rgb(45 80 114);
-	background: linear-gradient(6deg, rgb(78 113 146) 25%, rgb(45 80 114) 100%);
+	background: var(--rank-2);
+	background: linear-gradient(6deg, var(--rank-3) 25%, var(--rank-1) 100%);
 }
 
 .rank__block-item.rank__top-one:before {
@@ -4069,11 +4069,11 @@ a.liked>i {
 }
 
 .bg-main {
-	background-color: var(--bs-main) !important
+	background-color: var(--rank-2) !important
 }
 
 .text-main {
-	color: var(--bs-main) !important
+	color: var(--sky-primary) !important
 }
 
 .text-pink {
@@ -4111,7 +4111,7 @@ a.liked>i {
 
 .iKuJnjIFyr.template_2 {
 	border-radius: 5px;
-	background-color: var(--bs-main);
+	background-color: var(--rank-2);
 	padding: 30px 30px 100px 30px;
 }
 
@@ -6502,7 +6502,7 @@ body.webOs .bottom-navbar {
 .top-ranker {
 	position: relative;
 	padding: 30px 30px 30px 30px;
-	background: var(--rank-1);
+	background: var(--rank-2);
 	background-size: cover;
 }
 
@@ -7096,7 +7096,7 @@ canvas#fireworks {
 
 .header-mobile.menu_scroll,
 .layout-content-navbar.phone:not(.home) .header-mobile {
-	background: var(--bs-main);
+	background: var(--sky-primary);
 	padding-top: env(safe-area-inset-top) !important;
 }
 
@@ -7302,6 +7302,7 @@ canvas#fireworks {
 }
 
 .content_helper * {
+
 	max-width: 100%
 }
 
@@ -8297,8 +8298,10 @@ canvas#fireworks {
 
 /*======end menu custom*/
 .layout-menu-collapsed:not(.layout-menu-hover) .layout-menu img{
+/*
 	height: auto;
 	max-width: 50px;
+*/
 }
 
 /* ================= top_ranker_25 (Đại lộ danh vọng) — tách từ block, phối NAVY + GOLD ================= */
@@ -8341,7 +8344,7 @@ canvas#fireworks {
 	padding-bottom: 62.5px;
 	position: relative;
 	background: #1d446b;
-	background: radial-gradient(circle at 50% 30%, rgba(209, 209, 209, 0.04) 0%, rgba(209, 209, 209, 0.04) 50%, rgba(138, 138, 138, 0.04) 50%, rgba(138, 138, 138, 0.04) 100%), radial-gradient(circle at 9% 40%, rgba(209, 209, 209, 0.04) 0%, rgba(209, 209, 209, 0.04) 50%, rgba(71, 71, 71, 0.04) 50%, rgba(71, 71, 71, 0.04) 100%), radial-gradient(circle at 84% 81%, rgba(147, 147, 147, 0.04) 0%, rgba(147, 147, 147, 0.04) 50%, rgba(253, 253, 253, 0.04) 50%, rgba(253, 253, 253, 0.04) 100%), linear-gradient(266deg, #1d446b, #0d2338);
+	background: radial-gradient(circle at 50% 30%, rgba(209, 209, 209, 0.04) 0%, rgba(209, 209, 209, 0.04) 50%, rgba(138, 138, 138, 0.04) 50%, rgba(138, 138, 138, 0.04) 100%), radial-gradient(circle at 9% 40%, rgba(209, 209, 209, 0.04) 0%, rgba(209, 209, 209, 0.04) 50%, rgba(71, 71, 71, 0.04) 50%, rgba(71, 71, 71, 0.04) 100%), radial-gradient(circle at 84% 81%, rgba(147, 147, 147, 0.04) 0%, rgba(147, 147, 147, 0.04) 50%, rgba(253, 253, 253, 0.04) 50%, rgba(253, 253, 253, 0.04) 100%), linear-gradient(266deg, var(--rank-2), var(--rank-2));
 	transform-origin: top left;
 	transition: transform 0.1s linear;
 	/* zoom mượt */
@@ -8355,7 +8358,7 @@ canvas#fireworks {
 	position: absolute;
 	bottom: 0;
 	left: 0;
-	background-image: url(../images/rank/bg_rank.png?v=1);
+	background-image: url(../images/rank/bg_rank.png?v=2);
 	background-size: 100% 50%;
 	background-position: bottom;
 	background-repeat: no-repeat;

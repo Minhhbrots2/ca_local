@@ -379,6 +379,11 @@ class ConfigDeclaration {
 						'width'       => 100,
 						'height'      => 50,
 						'demo'        => '/application/themes/images/no-image.png'
+					),
+					'profile_default_pass' => array(
+						'type'        => 'text',
+						'label'       => 'Mật khẩu mặc định cho tài khoản mới',
+						'placeholder' => 'Bỏ trống thì phải tự nhập mỗi lần import',
 					)
 				)
 			),
@@ -551,51 +556,51 @@ class ConfigDeclaration {
 					)
 				)
 			),
-			'payment' => array(
-				'label'       => 'Thanh toán & Tín dụng',
-				'description' => 'Liên hệ tín dụng, tài khoản hỗ trợ MOC và tài khoản nhận thanh toán nâng cấp gói.',
-				'slug'        => 'payment',
-				'icon'        => 'credit-card',
-				'value'       => array(
-					'zalo_credit' => array(
-						'type'  => 'text',
-						'label' => 'Zalo tín dụng'
-					),
-					'phone_credit' => array(
-						'type'  => 'text',
-						'label' => 'Điện thoại tín dụng'
-					),
-					'stock_support_configs' => array(
-						'type'         => 'stock_support',
-						'label'        => 'Tài khoản hỗ trợ MOC',
-						'placeholder'  => 'Gõ tên [OR] email để tìm kiếm',
-						'json'         => true,
-						'source'       => 'block_type',
-						'pair_keyword' => 'stock_support_extra_configs'
-					),
-					'bank_name_MOC' => array(
-						'type'  => 'text',
-						'label' => 'Tên ngân hàng'
-					),
-					/** Số tài khoản là chuỗi: có thể bắt đầu bằng số 0 và dài hơn giới hạn số nguyên. */
-					'bank_number_MOC' => array(
-						'type'  => 'text',
-						'label' => 'Tài khoản ngân hàng'
-					),
-					'bank_user_name_MOC' => array(
-						'type'  => 'text',
-						'label' => 'Tên chủ tài khoản'
-					),
-					'email_support_MOC' => array(
-						'type'  => 'text',
-						'label' => 'Email hỗ trợ'
-					),
-					'phone_support_MOC' => array(
-						'type'  => 'text',
-						'label' => 'Điện thoại hỗ trợ'
-					)
-				)
-			),
+//			'payment' => array(
+//				'label'       => 'Thanh toán & Tín dụng',
+//				'description' => 'Liên hệ tín dụng, tài khoản hỗ trợ MOC và tài khoản nhận thanh toán nâng cấp gói.',
+//				'slug'        => 'payment',
+//				'icon'        => 'credit-card',
+//				'value'       => array(
+//					'zalo_credit' => array(
+//						'type'  => 'text',
+//						'label' => 'Zalo tín dụng'
+//					),
+//					'phone_credit' => array(
+//						'type'  => 'text',
+//						'label' => 'Điện thoại tín dụng'
+//					),
+//					'stock_support_configs' => array(
+//						'type'         => 'stock_support',
+//						'label'        => 'Tài khoản hỗ trợ MOC',
+//						'placeholder'  => 'Gõ tên [OR] email để tìm kiếm',
+//						'json'         => true,
+//						'source'       => 'block_type',
+//						'pair_keyword' => 'stock_support_extra_configs'
+//					),
+//					'bank_name_MOC' => array(
+//						'type'  => 'text',
+//						'label' => 'Tên ngân hàng'
+//					),
+//					/** Số tài khoản là chuỗi: có thể bắt đầu bằng số 0 và dài hơn giới hạn số nguyên. */
+//					'bank_number_MOC' => array(
+//						'type'  => 'text',
+//						'label' => 'Tài khoản ngân hàng'
+//					),
+//					'bank_user_name_MOC' => array(
+//						'type'  => 'text',
+//						'label' => 'Tên chủ tài khoản'
+//					),
+//					'email_support_MOC' => array(
+//						'type'  => 'text',
+//						'label' => 'Email hỗ trợ'
+//					),
+//					'phone_support_MOC' => array(
+//						'type'  => 'text',
+//						'label' => 'Điện thoại hỗ trợ'
+//					)
+//				)
+//			),
 			/** Giao diện do bản triển khai quyết định, không đổi từ admin nữa.
 			    Ẩn thay vì xoá để giữ nguyên giá trị đang có trong DB. */
 			'theme' => array(

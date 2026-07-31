@@ -276,7 +276,7 @@
 
 	max-width: 45%;
 
-	background: linear-gradient(150deg, #1d446b 0%, #0f2942 100%) !important;
+	background: linear-gradient(150deg, var(--rank-1) 0%, var(--rank-2) 100%) !important;
 
 	color: #fff;
 
@@ -342,9 +342,6 @@
 
 .sky-brand-logo {
 
-	height: 54px;
-
-	max-width: 82%;
 
 	object-fit: contain;
 
@@ -858,7 +855,7 @@
 
 	border-radius: 10px;
 
-	background: linear-gradient(135deg, #1d446b, #0f2942);
+	background: linear-gradient(150deg, var(--rank-1) 0%, var(--rank-2) 100%) !important;
 
 	color: #fff;
 

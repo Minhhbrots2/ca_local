@@ -12,8 +12,9 @@
 					<small class="text-muted">Sheet phải chia sẻ công khai (Bất kỳ ai có đường liên kết). Chọn đúng tab qua <b>gid</b> trên link.</small>
 				</div>
 				<div class="form-group">
-					<label class="col-form-label">Mật khẩu mặc định cho tài khoản mới</label>
-					<input type="text" name="default_pass" class="form-control" value="{$default_pass}" />
+					<label class="col-form-label">Mật khẩu mặc định cho tài khoản mới <span class="text-red">*</span></label>
+					<input type="text" name="default_pass" class="form-control" value="{$default_pass|escape}" />
+					<small class="text-muted">Đặt sẵn tại Cấu hình hệ thống &rsaquo; Nhân sự để lần sau không phải nhập lại.</small>
 				</div>
 			</div>
 			<div class="modal-footer">

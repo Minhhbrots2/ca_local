@@ -10,7 +10,7 @@
     --bs-main: #1d446b;
     --bs-blue: #007bff;
     --bs-indigo: #6610f2;
-    --bs-purple: var(--main-color);
+    --bs-purple: #696cff;
     --bs-pink: #e83e8c;
     --bs-red: #ff3e1d;
     --bs-orange: #fd7e14;
@@ -289,7 +289,7 @@ a {
     text-decoration: none;
 }
 a:hover {
-    color: #5f61e6;
+    color: var(--rank-3);
 }
 a:not([href]):not([class]),
 a:not([href]):not([class]):hover {
@@ -2717,7 +2717,7 @@ fieldset:disabled .btn {
     text-decoration: none;
 }
 .btn-link:hover {
-    color: #5f61e6;
+    color: var(--rank-3);
 }
 .btn-link:disabled,
 .btn-link.disabled {
@@ -3212,7 +3212,7 @@ fieldset:disabled .btn {
 }
 .nav-link:hover,
 .nav-link:focus {
-    color: #5f61e6;
+    color: var(--rank-3);
 }
 .nav-link.disabled {
     color: #c7cdd4;
@@ -5445,7 +5445,7 @@ fieldset:disabled .btn {
 }
 .link-primary:hover,
 .link-primary:focus {
-    color: #5f61e6;
+    color: var(--rank-3);
 }
 .link-secondary {
     color: #8592a3;
@@ -7540,6 +7540,7 @@ button:focus {
 .form-label-sm {
     font-size: 0.75rem;
 }
+
 .form-control::-moz-placeholder {
     -moz-transition: all 0.25s ease;
     transition: all 0.25s ease;
@@ -12166,6 +12167,7 @@ button.list-group-item-gray.active {
     .mx-xxl-4 {
         margin-right: 1.5rem !important;
         margin-left: 1.5rem !important;
+
     }
     .mx-xxl-5 {
         margin-right: 3rem !important;
@@ -13319,6 +13321,7 @@ button.list-group-item-gray.active {
         padding-right: 0.5rem !important;
     }
     .pe-xxl-3 {
+
         padding-right: 1rem !important;
     }
     .pe-xxl-4 {
@@ -14418,6 +14421,7 @@ html:not(.layout-footer-fixed) .content-wrapper {
     .content-footer {
         transition: none !important;
         transition-duration: 0s !important;
+
     }
     .layout-overlay {
         -webkit-animation: none !important;
@@ -15090,6 +15094,7 @@ html:not(.layout-menu-collapsed) .app-brand-text {
 .navbar.bg-success .navbar-nav>.nav>.nav-item>.nav-link:focus {
     color: #fff;
 }
+
 .navbar.bg-success .navbar-nav>.nav-link.disabled,
 .navbar.bg-success .navbar-nav>.nav-item>.nav-link.disabled,
 .navbar.bg-success .navbar-nav>.nav>.nav-item>.nav-link.disabled {
@@ -16003,7 +16008,7 @@ html:not(.layout-menu-collapsed) .app-brand-text {
     color: var(--main-color) !important;
 }
 .text-body[href]:hover {
-    color: #5f61e6 !important;
+    color: var(--rank-3) !important;
 }
 .bg-primary {
     background-color: var(--main-color) !important;
@@ -16109,16 +16114,16 @@ button.list-group-item-primary.active {
 }
 .btn-primary:hover {
     color: #fff;
-    background-color: #5f61e6;
-    border-color: #5f61e6;
+    background-color: var(--rank-3);
+    border-color: var(--rank-3);
     transform: translateY(-1px);
 }
 .btn-check:focus+.btn-primary,
 .btn-primary:focus,
 .btn-primary.focus {
     color: #fff;
-    background-color: #5f61e6;
-    border-color: #5f61e6;
+    background-color: var(--rank-3);
+    border-color: var(--rank-3);
     transform: translateY(0);
     box-shadow: none;
 }
@@ -16152,8 +16157,8 @@ button.list-group-item-primary.active {
     background-color: #F5F5F5;
 }
 .btn-check:focus+.btn-outline-default {
-    background-color: #5f61e6;
-    border-color: #5f61e6;
+    background-color: var(--rank-3);
+    border-color: var(--rank-3);
     color: #FFF;
     box-shadow: none;
     transform: translateY(0);
@@ -16191,14 +16196,14 @@ button.list-group-item-primary.active {
 }
 .btn-outline-primary:hover {
     color: #FFF !important;
-    background-color: #5f61e6 !important;
-    border-color: #5f61e6 !important;
+    background-color: var(--rank-3) !important;
+    border-color: var(--rank-3) !important;
     box-shadow: 0 0.125rem 0.25rem 0 rgba(105, 108, 255, 0.4);
 }
 .btn-check:focus+.btn-outline-primary,
 .btn-outline-primary:focus {
-    background-color: #5f61e6;
-    border-color: #5f61e6;
+    background-color: var(--rank-3);
+    border-color: var(--rank-3);
     box-shadow: none;
     transform: translateY(0);
 }
@@ -16248,7 +16253,7 @@ button.list-group-item-primary.active {
 }
 .nav .nav-link:hover,
 .nav .nav-link:focus {
-    color: #5f61e6;
+    color: var(--rank-3);
 }
 .nav-pills .nav-link.active,
 .nav-pills .nav-link.active:hover,
@@ -16551,6 +16556,7 @@ a:hover {
     color: #566a7f;
 }
 .bg-navbar-theme .navbar-nav>.nav-link.disabled,
+
 .bg-navbar-theme .navbar-nav>.nav-item>.nav-link.disabled,
 .bg-navbar-theme .navbar-nav>.nav>.nav-item>.nav-link.disabled {
     color: #a5afbb !important;
@@ -19204,6 +19210,7 @@ body[class*=jconfirm-no-scroll-] {
     -webkit-box-shadow: none;
     box-shadow: none;
     color: #fff;
+
     background: 0
 }
 .jconfirm.jconfirm-black .jconfirm-box .jconfirm-buttons button.btn-default:hover,
@@ -23324,6 +23331,7 @@ button.ui-button::-moz-focus-inner {
 .pretty.p-tada:not(.p-default) input:checked+.state .icon,
 .pretty.p-tada:not(.p-default) input:checked+.state .svg,
 .pretty.p-tada:not(.p-default) input:checked+.state img,
+
 .pretty.p-tada:not(.p-default) input:checked+.state label:after,
 .pretty.p-tada:not(.p-default) input:checked+.state label:before {
     -webkit-animation: tada .7s cubic-bezier(.25, .46, .45, .94) 1 alternate;
@@ -26746,6 +26754,7 @@ body.compensate-for-scrollbar {
     height: 100%;
     left: 0;
     outline: none;
+
     overflow: auto;
     -webkit-overflow-scrolling: touch;
     padding: 20px;
@@ -27419,6 +27428,7 @@ html.dark table.dataTable tr.dt-hasChild td.dt-control:before {
 table.dataTable thead>tr>th.sorting,
 table.dataTable thead>tr>th.sorting_asc,
 table.dataTable thead>tr>th.sorting_desc,
+
 table.dataTable thead>tr>th.sorting_asc_disabled,
 table.dataTable thead>tr>th.sorting_desc_disabled,
 table.dataTable thead>tr>td.sorting,
@@ -28494,6 +28504,7 @@ div.dataTables_wrapper div.dataTables_paginate ul.pagination .page-link div:not(
 
 
 
+
 @media(max-width:767.98px) {
 
 
@@ -28751,6 +28762,7 @@ table.dataTable.dtr-inline.collapsed>tbody>tr>th.dtr-control:before {
     border: .15em solid white;
 
     border-radius: 1em;
+
 
     box-shadow: 0 0 .2em #444;
 
@@ -29343,6 +29355,7 @@ table.dataTable.dtr-column>tbody>tr>th.control:before {
     content: "+";
 
     background-color: #0d6efd
+
 
 }
 
@@ -33630,6 +33643,7 @@ body .redactor-box-fullscreen {
 
     content: "\e61c";
 
+
 }
 
 
@@ -33655,6 +33669,7 @@ body .redactor-box-fullscreen {
     content: "\e61f";
 
 }
+
 
 
 

@@ -1662,7 +1662,7 @@ function _profile_import_fields(){
 		'cccd_place'    => 'Nơi cấp'
 	);
 }
-#- Đoán trường cho 1 cột theo tên tiêu đề; $used giữ các trường đã gán để không trùng
+// gợi ý mapping các trường theo ggsheet
 function _profile_import_guess_field($header, $used){
 	$h = function_exists('mb_strtolower') ? mb_strtolower(trim($header), 'UTF-8') : strtolower(trim($header));
 	$h = preg_replace('/\s+/', ' ', $h); // gộp xuống dòng/khoảng trắng (tiêu đề Sheet có thể có \n)
@@ -1677,7 +1677,7 @@ function _profile_import_guess_field($header, $used){
 		array('status_id',     array('tình trạng','trạng thái','tinh trang')),
 		array('end_date',      array('ngày nghỉ','nghỉ việc','ngày thôi việc','ngày kết thúc')),
 		array('start_date',    array('ngày vào làm','vào làm','ngày vào công ty','vào công ty','ngày vào','ngày ký')),
-		array('birthday',      array('ngày sinh','sinh nhật')),
+		array('birthday',      array('ngày sinh','năm sinh','sinh nhật')),
 		array('phone',         array('điện thoại','số điện thoại','sđt','phone')),
 		array('address',       array('địa chỉ')),
 		array('CCID',          array('số cccd','cccd','căn cước')),
@@ -1693,6 +1693,83 @@ function _profile_import_guess_field($header, $used){
 		}
 	}
 	return '';
+}
+#- Chuẩn hoá 1 giá trị lấy từ Sheet trước khi đem đi so khớp: bỏ khoảng trắng đặc biệt
+#- (NBSP/zero-width do copy từ Word, Drive) và gộp khoảng trắng thừa.
+function _profile_import_norm_name($name){
+	$name = str_replace(array("\xC2\xA0", "\xE2\x80\x8B", "\xEF\xBB\xBF"), ' ', (string) $name);
+	return trim(preg_replace('/\s+/', ' ', $name));
+}
+// chuẩn hóa ngày sinh
+function _profile_import_birthday_time($value){
+	global $clsISO;
+	$value = trim((string) $value);
+	if($value === '') return 0;
+	if(!preg_match('/^\d{4}$/', $value)) return (int) $clsISO->toTime($value);
+	$year = (int) $value;
+	if($year < 1900 || $year > (int) date('Y')) return 0;
+	return mktime(0, 0, 0, 1, 1, $year);
+}
+// Bỏ qua hàng tiêu đề để tính các hàng khác
+function _profile_import_header_index($rows){
+	$best = 0;
+	$best_score = -1;
+	$limit = min(10, count($rows));
+	for($i = 0; $i < $limit; $i++){
+		if(!is_array($rows[$i])) continue;
+		$used = array();
+		$score = 0;
+		foreach($rows[$i] as $cell){
+			$guess = _profile_import_guess_field(_profile_import_norm_name($cell), $used);
+			if($guess === '') continue;
+			$used[$guess] = true;
+			$score++;
+		}
+		if($score <= $best_score) continue;
+		$best_score = $score;
+		$best = $i;
+	}
+	return $best;
+}
+#- Điều kiện tìm 1 property theo tên lấy từ Sheet. Khớp lần lượt mã, tên hiển thị, slug và mã đã bỏ
+#- khoảng trắng — Sheet hay ghi "TPS KD HN01" trong khi mã lưu trong hệ thống là "TPSKDHN01".
+function _profile_import_property_cond($property_type, $name){
+	global $core;
+	$esc = addslashes($name);
+	$slug = addslashes((string) $core->replaceSpace($name));
+	$flat = addslashes(str_replace(' ', '', $name));
+	$cond = "`property_type`='".addslashes($property_type)."'";
+	$cond .= " and (`property_code`='".$esc."' OR `title`='".$esc."'";
+	$cond .= " OR `slug`='".$slug."'";
+	$cond .= " OR REPLACE(`property_code`, ' ', '')='".$flat."')";
+	return $cond;
+}
+#- Tìm property theo tên lấy từ Sheet, trả property_id (0 = không khớp).
+#- tín hiệu khớp (mã > tên > slug), bỏ bản ghi đã xoá, và báo ngược ra cho admin khi còn trùng.
+function _profile_import_match_property($clsProperty, $property_type, $name, &$dupes){
+	global $core;
+	$pkey = $clsProperty->pkey;
+	$field = "`{$pkey}`, `property_code`, `title`, `slug`, `is_trash`";
+	$rows = $clsProperty->getAll(_profile_import_property_cond($property_type, $name), $field);
+	if(empty($rows)) return 0;
+	$slug = (string) $core->replaceSpace($name);
+	$flat = str_replace(' ', '', $name);
+	$ranked = array();
+	foreach($rows as $row){
+		if((int) $row['is_trash'] !== 0) continue; // phòng ban/chức danh trong thùng rác thì không gán
+		$rank = 3;
+		if(str_replace(' ', '', (string) $row['property_code']) === $flat) $rank = 2;
+		if((string) $row['slug'] === $slug) $rank = 1;
+		if((string) $row['title'] === $name) $rank = 1;
+		if((string) $row['property_code'] === $name) $rank = 0;
+		$ranked[$rank][] = (int) $row[$pkey];
+	}
+	if(empty($ranked)) return 0;
+	ksort($ranked);
+	$best = reset($ranked);
+	if(count($best) > 1 && !in_array($name, $dupes)) $dupes[] = $name;
+	rsort($best); // còn trùng thì lấy bản ghi mới nhất, bản cũ thường là nhánh đã bỏ
+	return $best[0];
 }
 #- 1 dòng rỗng khi mọi ô đều trống
 function _profile_import_row_empty($row){
@@ -1712,14 +1789,14 @@ function _profile_import_csv_url($url){
 	return 'https://docs.google.com/spreadsheets/d/'.$id.'/export?format=csv&gid='.$gid;
 }
 #- Tải nội dung 1 URL (curl -> fallback file_get_contents)
-function _profile_import_http_get($url){
+function _profile_import_http_get($url, $timeout = 30){
 	if(function_exists('curl_init')){
 		$ch = curl_init();
 		curl_setopt($ch, CURLOPT_URL, $url);
 		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+		curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 		curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0');
 		$data = curl_exec($ch);
 		$code = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -1728,11 +1805,48 @@ function _profile_import_http_get($url){
 		return '';
 	}
 	$ctx = stream_context_create(array(
-		'http' => array('timeout' => 30, 'follow_location' => 1),
+		'http' => array('timeout' => $timeout, 'follow_location' => 1),
 		'ssl'  => array('verify_peer' => false, 'verify_peer_name' => false)
 	));
 	$data = @file_get_contents($url, false, $ctx);
 	return ($data !== false) ? $data : '';
+}
+#- Link chia sẻ Google Drive (/file/d/ID/view, open?id=ID, uc?id=ID) trỏ tới trang xem, không phải file ảnh.
+#- Đổi sang endpoint thumbnail để tải được đúng bytes ảnh (và nhẹ hơn bản gốc trong Drive).
+function _profile_import_direct_image_url($url){
+	if(stripos($url, 'google.com') === false) return $url;
+	$id = '';
+	if(preg_match('#/file/d/([a-zA-Z0-9_-]{10,})#', $url, $m)){
+		$id = $m[1];
+	} else if(preg_match('#[?&]id=([a-zA-Z0-9_-]{10,})#', $url, $m)){
+		$id = $m[1];
+	}
+	if($id === '') return $url;
+	return 'https://drive.google.com/thumbnail?id='.$id.'&sz=w600';
+}
+// tải ảnh từ link Drive/HTTP về thư mục /avatar
+function _profile_import_fetch_avatar($url, $code){
+	$url = trim($url);
+	if($url === '') return '';
+	if(strpos($url, '/') === 0) return $url; // đã là đường dẫn sẵn trong host
+	if(!preg_match('#^https?://#i', $url)) return '';
+	$dir = ROOTPATH.ftp_abs_path_info.'/avatar';
+	if(!is_dir($dir) && !@mkdir($dir, 0777, true)) return '';
+	$slug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($code)), '-');
+	$stem = ($slug !== '' ? $slug.'-' : '').substr(md5($url), 0, 10);
+	#- Tên file suy ra từ chính link nguồn: chạy lại import không tải lại ảnh đã có
+	foreach(array('jpg', 'png', 'gif', 'webp') as $known){
+		if(file_exists($dir.'/'.$stem.'.'.$known)) return ftp_abs_path_info.'/avatar/'.$stem.'.'.$known;
+	}
+	$data = _profile_import_http_get(_profile_import_direct_image_url($url), 20);
+	if($data === '' || strlen($data) > 8388608) return ''; // 8MB: quá cỡ 1 ảnh đại diện, nhiều khả năng không phải ảnh
+	$info = @getimagesizefromstring($data);
+	if(empty($info[2])) return ''; // Drive trả trang HTML khi file chưa chia sẻ công khai
+	$ext_map = array(IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_GIF => 'gif', IMAGETYPE_WEBP => 'webp');
+	if(!isset($ext_map[$info[2]])) return '';
+	$name = $stem.'.'.$ext_map[$info[2]];
+	if(@file_put_contents($dir.'/'.$name, $data) === false) return '';
+	return ftp_abs_path_info.'/avatar/'.$name;
 }
 #- Parse chuỗi CSV -> mảng dòng (fgetcsv xử lý ô có dấu phẩy/xuống dòng trong ngoặc kép).
 #- Dùng php://temp thay tempnam(): stream tự huỷ khi fclose/kết thúc script, nên lúc tiến trình bị
@@ -1783,9 +1897,10 @@ function _profile_import_list_department($department_id, $tree){
 }
 #- Bước 1: mở modal nhập link Google Sheet
 function default_open_import(){
-	global $smarty, $core;
+	global $smarty, $core, $clsConfiguration;
 	$smarty->assign('core', $core);
-	$smarty->assign('default_pass', 'SkyRealty@2026');
+	#- Chưa cấu hình ở màn Cấu hình hệ thống thì để rỗng, admin tự nhập
+	$smarty->assign('default_pass', $clsConfiguration->getValue('profile_default_pass', ''));
 	// Return
 	echo $core->build('_ajax.open_import.tpl');
 	die();
@@ -1794,8 +1909,10 @@ function default_open_import(){
 function default_read_import(){
 	global $core, $clsISO, $mod;
 	$sheet_url = trim(Input::post('sheet_url', ''));
-	$default_pass = Input::post('default_pass', 'SkyRealty@2026');
+	$default_pass = trim(Input::post('default_pass', ''));
 	if(empty($sheet_url)){ echo 'ERROR|||Vui lòng dán link Google Sheet.'; die(); }
+	#- Bắt buộc có mật khẩu ngay từ bước này, tài khoản mới tạo ở bước 3 luôn cần một mật khẩu thật
+	if($default_pass === ''){ echo 'ERROR|||Vui lòng nhập mật khẩu mặc định cho tài khoản mới.'; die(); }
 	$csv_url = _profile_import_csv_url($sheet_url);
 	if(empty($csv_url)){ echo 'ERROR|||Link Google Sheet không hợp lệ.'; die(); }
 	$csv = _profile_import_http_get($csv_url);
@@ -1806,6 +1923,10 @@ function default_read_import(){
 	while(!empty($rows) && _profile_import_row_empty($rows[0])){ array_shift($rows); }
 	if(count($rows) < 2){ echo 'ERROR|||Sheet không có dữ liệu nhân sự.'; die(); }
 	if(isset($rows[0][0])){ $rows[0][0] = preg_replace('/^\xEF\xBB\xBF/', '', $rows[0][0]); }
+	#- Cắt bỏ các dòng tiêu đề trang phía trên hàng tên cột để $rows[0] luôn là hàng tên cột
+	$head_at = _profile_import_header_index($rows);
+	if($head_at > 0) $rows = array_slice($rows, $head_at);
+	if(count($rows) < 2){ echo 'ERROR|||Sheet không có dữ liệu nhân sự.'; die(); }
 	$header = $rows[0];
 	$colCount = 0;
 	foreach($rows as $r){ if(count($r) > $colCount) $colCount = count($r); }
@@ -1889,8 +2010,7 @@ function default_do_import(){
 	$uid = preg_replace('/[^a-zA-Z0-9]/', '', Input::post('uid', ''));
 	$columns = Input::post('columns', array());
 	$opt_over = Input::post('opt_over', 'Insert');
-	$default_pass = Input::post('default_pass', 'SkyRealty@2026');
-	if(empty($default_pass)) $default_pass = 'SkyRealty@2026';
+	$default_pass = trim(Input::post('default_pass', ''));
 	$pass_mode = Input::post('pass_mode', 'default'); // 'default' | 'cccd' (= Số CCCD từ cột đã map)
 	$cachedFile = DIR_CACHE_JSON.'/'.$uid.'.json';
 	$rows = array();
@@ -1912,10 +2032,16 @@ function default_do_import(){
 	if($dupe > 0){ echo json_encode(array('result' => '_error', 'message' => 'Có 2 cột trỏ về cùng 1 trường. Mỗi trường chỉ chọn 1 cột.')); die(); }
 	if(!isset($map['code']) && !isset($map['email'])){ echo json_encode(array('result' => '_error', 'message' => 'Bắt buộc map ít nhất Mã nhân viên hoặc Email để chống trùng.')); die(); }
 	if($pass_mode === 'cccd' && !isset($map['CCID'])){ echo json_encode(array('result' => '_error', 'message' => 'Chọn mật khẩu = Số CCCD nhưng chưa gán cột "Số CCCD". Hãy map cột đó rồi thử lại.')); die(); }
+	#- Không có mật khẩu mặc định thì dừng, tránh tạo tài khoản mật khẩu trống (chế độ CCCD vẫn cần nó cho dòng thiếu CCCD)
+	if($default_pass === ''){ echo json_encode(array('result' => '_error', 'message' => 'Chưa nhập mật khẩu mặc định cho nhân sự mới.')); die(); }
 	@set_time_limit(300);
 	$pkey = $clsProfile->pkey;
 	$inserted = $updated = $skipped = $noid = $failed = 0;
-	$unmatched_dept = $unmatched_role = array();
+	$avatar_failed = $avatar_skipped = 0;
+	$unmatched_dept = $unmatched_role = $dupe_prop = array();
+	$started_at = time();
+	#- Trần thời gian dành cho việc tải ảnh đại diện, chừa phần còn lại của set_time_limit cho việc ghi DB
+	$avatar_budget_sec = 180;
 	#- id trạng thái "Đang thử việc" (tra 1 lần; fallback = đang làm việc)
 	$tmpProb = $clsProperty->getByCond("`property_type`='_STATUS_STAFF' and `slug`='dang-thu-viec'", $clsProperty->pkey);
 	$status_probation_id = !empty($tmpProb) ? (int) $tmpProb[$clsProperty->pkey] : _STATUS_STAFF_ON_ID;
@@ -1933,29 +2059,35 @@ function default_do_import(){
 		$email = strtolower($getVal($row, 'email'));
 		$code = $getVal($row, 'code');
 		if($email === '' && $code === ''){ $noid++; continue; }
+		#- Chống trùng: khoá chính = Mã NV (code), phụ = email/user_name. Tra sớm để dòng sẽ bị bỏ qua
+		#- không phải tra phòng ban/chức danh và nhất là không phải tải ảnh đại diện.
+		$existing = array();
+		if($code !== ''){
+			$existing = $clsProfile->getByCond("`code`='".addslashes($code)."'", $pkey);
+		}
+		if(empty($existing) && $email !== ''){
+			$existing = $clsProfile->getByCond("`user_name`='".addslashes($email)."'", $pkey);
+		}
+		if(!empty($existing) && $opt_over !== 'Update'){ $skipped++; continue; }
 		$full_name = $getVal($row, 'full_name');
 		#- Phòng ban: thử cột chính (Bộ phận/leaf) trước, rỗng hoặc không khớp thì thử cột dự phòng (Phòng ban/cấp trên)
 		$department_id = 0;
 		$dept_report = '';
-		foreach(array($getVal($row, 'department_id'), $getVal($row, 'department_alt')) as $dept_name){
+		foreach(array($getVal($row, 'department_id'), $getVal($row, 'department_alt')) as $dept_raw){
+			$dept_name = _profile_import_norm_name($dept_raw);
 			if($dept_name === '') continue;
 			if($dept_report === '') $dept_report = $dept_name;
 			if(!array_key_exists($dept_name, $dept_cache)){
-				$tmp = $clsProperty->getByCond("`property_type`='_DEPARTMENT' and (`property_code`='".addslashes($dept_name)."' OR `slug`='".$core->replaceSpace($dept_name)."')", $clsProperty->pkey);
-				$dept_cache[$dept_name] = !empty($tmp) ? (int) $tmp[$clsProperty->pkey] : 0;
+				$dept_cache[$dept_name] = _profile_import_match_property($clsProperty, '_DEPARTMENT', $dept_name, $dupe_prop);
 			}
 			if($dept_cache[$dept_name] > 0){ $department_id = $dept_cache[$dept_name]; break; }
 		}
 		if($department_id === 0 && $dept_report !== '' && !in_array($dept_report, $unmatched_dept)) $unmatched_dept[] = $dept_report;
-
-
-		
 		$role_id = 0;
-		$role_name = $getVal($row, 'role_id');
+		$role_name = _profile_import_norm_name($getVal($row, 'role_id'));
 		if($role_name !== ''){
 			if(!array_key_exists($role_name, $role_cache)){
-				$tmp = $clsProperty->getByCond("`property_type`='_ROLE' and (`property_code`='".addslashes($role_name)."' OR `slug`='".$core->replaceSpace($role_name)."')", $clsProperty->pkey);
-				$role_cache[$role_name] = !empty($tmp) ? (int) $tmp[$clsProperty->pkey] : 0;
+				$role_cache[$role_name] = _profile_import_match_property($clsProperty, '_ROLE', $role_name, $dupe_prop);
 			}
 			$role_id = $role_cache[$role_name];
 			if($role_id === 0 && !in_array($role_name, $unmatched_role)) $unmatched_role[] = $role_name;
@@ -1979,7 +2111,17 @@ function default_do_import(){
 		$phone = $getVal($row, 'phone');
 		$address = $getVal($row, 'address');
 		$ccid = $getVal($row, 'CCID');
-		$avatar = $getVal($row, 'avatar');
+		$avatar = '';
+		$avatar_src = $getVal($row, 'avatar');
+		if($avatar_src !== ''){
+			#- Ngừng tải ảnh khi hết ngân sách để phần ghi DB còn kịp chạy; chạy lại import sẽ tải nốt
+			if(time() - $started_at >= $avatar_budget_sec){
+				$avatar_skipped++;
+			} else {
+				$avatar = _profile_import_fetch_avatar($avatar_src, $code);
+				if($avatar === '') $avatar_failed++;
+			}
+		}
 		$birthday = $getVal($row, 'birthday');
 		$start_date = $getVal($row, 'start_date');
 		if($code !== '') $fieldset['code'] = $code;
@@ -1994,15 +2136,17 @@ function default_do_import(){
 		if($address !== '') $fieldset['address'] = $address;
 		if($ccid !== '') $fieldset['CCID'] = $ccid;
 		if($avatar !== '') $fieldset['avatar'] = $avatar;
-		if($birthday !== '') $fieldset['birthday'] = $clsISO->toTime($birthday);
+		#- Không parse được thì bỏ qua, giữ nguyên ngày sinh đang có thay vì ghi đè số 0
+		$birthday_time = _profile_import_birthday_time($birthday);
+		if($birthday_time > 0) $fieldset['birthday'] = $birthday_time;
 		if($start_date !== '') $fieldset['start_date'] = $clsISO->toTime($start_date);
-		#- Tình trạng -> status_id: ưu tiên khớp _STATUS_STAFF theo property_code/slug, không khớp mới suy đoán từ khoá
-		$status_txt = $getVal($row, 'status_id');
+		#- Tình trạng -> status_id: ưu tiên khớp _STATUS_STAFF theo mã/tên/slug, không khớp mới suy đoán từ khoá
+		$status_txt = _profile_import_norm_name($getVal($row, 'status_id'));
 		if($status_txt !== ''){
 			if(!array_key_exists($status_txt, $status_cache)){
-				$tmpSt = $clsProperty->getByCond("`property_type`='_STATUS_STAFF' and (`property_code`='".addslashes($status_txt)."' OR `slug`='".$core->replaceSpace($status_txt)."')", $clsProperty->pkey);
-				if(!empty($tmpSt)){
-					$status_cache[$status_txt] = (int) $tmpSt[$clsProperty->pkey];
+				$matched_status = _profile_import_match_property($clsProperty, '_STATUS_STAFF', $status_txt, $dupe_prop);
+				if($matched_status > 0){
+					$status_cache[$status_txt] = $matched_status;
 				} else {
 					$st = function_exists('mb_strtolower') ? mb_strtolower($status_txt, 'UTF-8') : strtolower($status_txt);
 					if(strpos($st, 'nghỉ') !== false || strpos($st, 'nghi') !== false){
@@ -2025,16 +2169,7 @@ function default_do_import(){
 		}
 		if($role_id > 0) $fieldset['role_id'] = $role_id;
 		$fieldset['upd_date'] = time();
-		#- Chống trùng: khoá chính = Mã NV (code), phụ = email/user_name
-		$existing = array();
-		if($code !== ''){
-			$existing = $clsProfile->getByCond("`code`='".addslashes($code)."'", $pkey);
-		}
-		if(empty($existing) && $email !== ''){
-			$existing = $clsProfile->getByCond("`user_name`='".addslashes($email)."'", $pkey);
-		}
 		if(!empty($existing)){
-			if($opt_over !== 'Update'){ $skipped++; continue; }
 			if(!empty($more_extra)){
 				$one = $clsProfile->getOne((int) $existing[$pkey], 'more_information');
 				$exMore = $clsISO->to_array_json($one['more_information']);
@@ -2048,6 +2183,7 @@ function default_do_import(){
 			$fieldset['user_name'] = $login;
 			#- Mật khẩu: = Số CCCD nếu chọn chế độ 'cccd' và dòng có CCID, không thì mật khẩu mặc định
 			$pass_plain = ($pass_mode === 'cccd' && $ccid !== '') ? $ccid : $default_pass;
+			if($pass_plain === ''){ $failed++; continue; } // thiếu cả CCCD lẫn mật khẩu mặc định -> bỏ dòng, không tạo tài khoản trống
 			$fieldset['user_pass'] = $clsProfile->encrypt($pass_plain);
 			$fieldset['oauth_provider'] = '_register';
 			if($email !== '') $fieldset['oauth_email'] = $email;
@@ -2067,6 +2203,9 @@ function default_do_import(){
 	$msg .= '.';
 	if(!empty($unmatched_dept)) $msg .= '<br><span class="text-danger">Phòng ban không khớp (để trống):</span> '.htmlspecialchars(implode(', ', $unmatched_dept));
 	if(!empty($unmatched_role)) $msg .= '<br><span class="text-danger">Chức danh không khớp (để trống):</span> '.htmlspecialchars(implode(', ', $unmatched_role));
+	if(!empty($dupe_prop)) $msg .= '<br><span class="text-warning">Trùng mã trong danh mục (đã lấy bản ghi mới nhất):</span> '.htmlspecialchars(implode(', ', $dupe_prop)).' — nên gộp lại ở Danh mục phòng ban / chức danh.';
+	if($avatar_failed > 0) $msg .= '<br><span class="text-danger">Không tải được '.$avatar_failed.' ảnh đại diện</span> — kiểm tra link ảnh đã chia sẻ "Bất kỳ ai có đường liên kết" chưa.';
+	if($avatar_skipped > 0) $msg .= '<br><span class="text-warning">Còn '.$avatar_skipped.' ảnh chưa tải do quá thời gian.</span> Chạy lại import ở chế độ Cập nhật để tải nốt.';
 	echo json_encode(array('result' => '_success', 'message' => $msg));
 	die();
 }

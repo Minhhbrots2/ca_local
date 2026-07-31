@@ -2,7 +2,7 @@
 <html class="loading" lang="en" data-textdirection="ltr">
   	<!-- BEGIN: Head-->
 	<head>
-		<title>Đăng nhập  | Admin Sky Realty C-A</title>
+		<title>{$clsConfiguration->getValue('site_name')}</title>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=0">
@@ -40,7 +40,7 @@
 							<div class="card mb-0 p-3 h-100 d-flex justify-content-center">
 								<div class="card-header pb-1">
 									<div class="card-title text-center">
-										<img src="{$smarty.const.DOMAIN_URL}/application/themes/images/logo-header.png" 
+										<img src="{$header_configs.HeaderLogo}" 
 										width="80px" alt="{$PAGE_NAME}" />
 									</div>
 								</div>
@@ -59,13 +59,29 @@
 											<input type="password" class="form-control" required="true" id="exampleInputPassword1"
 												placeholder="Password" name="txtPassword" />
 										</div>
+										<div class="form-group d-flex flex-md-row flex-column justify-content-between align-items-center">
+											<div class="text-left">
+												<div class="checkbox checkbox-sm">
+													<input type="checkbox" class="form-check-input" id="exampleCheck1">
+													<label class="checkboxsmall" for="exampleCheck1">
+														<small>Keep me logged in</small>
+													</label>
+												</div>
+											</div>
+											<div class="text-right">
+												<a href="https://www.vietiso.com/contact" class="card-link">
+													<small>Forgot Password?</small>
+												</a>
+											</div>
+										</div>
 										<input type="hidden" name="btnLogin" value="btnLogin" />
 										<button type="submit" class="btn btn-primary glow w-100 position-relative">Login <i id="icon-arrow" class="bx bx-right-arrow-alt"></i>
 										</button>
 									</form>
 									<hr>
 									<div class="text-center">
-										<small class="mr-25">Powered by Future Tech</small>
+										<small class="mr-25">Don't have an account?</small>
+										<a><small>Sign up</small></a>
 									</div>
 								</div>
 							</div>

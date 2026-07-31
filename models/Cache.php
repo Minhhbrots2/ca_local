@@ -12,6 +12,44 @@
 class Cache {
 	protected $_instance = null;   // dtkahl\SimpleRedisCache — giữ nguyên đường cũ (has/get/put/set/delete)
 	protected $_client   = null;   // Predis\Client thô — cần cho increment + SET NX (dtkahl giấu client private)
+	/** @var string|null Tiền tố khoá riêng của site — dò 1 lần / request. */
+	protected static $_prefix = null;
+
+	/**
+	 * Tiền tố RIÊNG theo site cho mọi khoá Redis.
+	 *
+	 * Các site (skyrealty, tienphatsunrise, ...) dùng chung codebase và chạy trên
+	 * cùng server → cùng Redis localhost:6379 database 0. Trước đây khoá chỉ mang
+	 * 'DUP_' nên tên khoá giống hệt nhau ở mọi site: site nạp cache sau đè lên site
+	 * trước, và màn Cấu hình hiện dữ liệu của site khác cho tới khi hết TTL 5 phút.
+	 *
+	 * DB_NAME (configs/database.php) là thứ chắc chắn khác nhau giữa các site và đã
+	 * có sẵn từ lúc core.php kết nối DB — không cần khai báo thêm gì khi deploy.
+	 * @return string
+	 */
+	protected static function prefix(){
+		if(self::$_prefix !== null){
+			return self::$_prefix;
+		}
+		if(defined('CACHE_PREFIX') && CACHE_PREFIX !== ''){
+			self::$_prefix = CACHE_PREFIX;
+		} else if(defined('DB_NAME') && DB_NAME !== ''){
+			self::$_prefix = 'DUP_'.DB_NAME.'_';
+		} else {
+			// Không biết mình là site nào thì giữ nguyên đường cũ, không tự bịa khoá.
+			self::$_prefix = 'DUP_';
+		}
+		return self::$_prefix;
+	}
+
+	/**
+	 * Khoá thật gửi xuống Redis. MỌI method phải đi qua đây — tự nối chuỗi ở từng
+	 * chỗ chính là lỗi đã khiến remember() ghi 'DUP_DUP_...' mà đọc 'DUP_...'.
+	 * @return string
+	 */
+	protected function key($key){
+		return self::prefix().$key;
+	}
 
 	function __construct(){
 		$config = array(
@@ -30,7 +68,7 @@ class Cache {
 	}
 	public function has($key){
 		global $core, $dbconn, $clsISO;
-		return $this->_instance->has('DUP_'.$key);
+		return $this->_instance->has($this->key($key));
 	}
 	public function getInstace(){
 		return $this->_instance;
@@ -47,14 +85,14 @@ class Cache {
 		// TTL jitter ±12% — tránh hàng loạt key hết hạn cùng nhịp gây stampede đồng bộ.
 		$jittered = (int) round($time * (0.88 + (mt_rand(0, 240) / 1000.0)));
 		if($jittered < 1){ $jittered = (int)$time; }
-		return $this->_instance->put('DUP_'.$key, $value, $jittered);
+		return $this->_instance->put($this->key($key), $value, $jittered);
 	}
 	public function set($key, $value){
 		global $core, $dbconn, $clsISO;
 		if(!empty($value) && is_array($value)){
 			$value = json_encode($value, JSON_UNESCAPED_UNICODE);
 		}
-		return $this->_instance->forever('DUP_'.$key, $value);
+		return $this->_instance->forever($this->key($key), $value);
 	}
 	public function isJsonString($string) {
 		json_decode($string);
@@ -63,7 +101,7 @@ class Cache {
 	public function get($key, $def = array(), $decoded = true){
 		global $core, $dbconn, $clsISO;
 		$response = $def;
-		$value = $this->_instance->get('DUP_'.$key);
+		$value = $this->_instance->get($this->key($key));
 		if(!empty($value)){
 			if($this->isJsonString($value)){
 				$response = json_decode(($decoded ? html_entity_decode($value): $value), true);
@@ -76,7 +114,7 @@ class Cache {
 	public function delete($key){
 		global $core, $dbconn, $clsISO;
 		if($this->has($key)){
-			return $this->_instance->forget('DUP_'.$key);
+			return $this->_instance->forget($this->key($key));
 		} else {
 			return false;
 		}
@@ -87,7 +125,7 @@ class Cache {
 	 */
 	public function remember($key, callable $callback, $time = CACHE_LIFETIME){
 		try {
-			$raw = $this->_client->get('DUP_'.$key);   // Predis trả null nếu thiếu key
+			$raw = $this->_client->get($this->key($key));   // Predis trả null nếu thiếu key
 			if($raw !== null && $raw !== ''){
 				if($this->isJsonString($raw)){
 					// KHÔNG html_entity_decode: data do put() json_encode ra; entity (&quot;/&amp;/&lt;)
@@ -101,17 +139,17 @@ class Cache {
 		}
 		$value = $callback();
 		try { 
-			$this->put('DUP_'.$key, $value, $time); 
+			$this->put($key, $value, $time); 
 		} catch (\Throwable $e) {}
 		return $value;
 	}
 	/** INCR nguyên tử — dùng cho version-bump invalidation (bh:ver:p:{pid}). */
 	public function increment($key){
-		return $this->_client->incr('DUP_'.$key);
+		return $this->_client->incr($this->key($key));
 	}
 	/** SET key value EX ttl NX — khoá dựng (mutex chống stampede). True nếu giành được. */
 	public function add($key, $value, $ttlSeconds){
-		$result = $this->_client->set('DUP_'.$key, $value, 'EX', (int)$ttlSeconds, 'NX');
+		$result = $this->_client->set($this->key($key), $value, 'EX', (int)$ttlSeconds, 'NX');
 		return $result !== null;
 	}
 }

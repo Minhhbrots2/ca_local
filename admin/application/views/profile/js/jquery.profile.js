@@ -449,6 +449,8 @@ function read_import(_this, e){
 	var _form = $(_this).closest('form');
 	var url = $.trim($('input[name=sheet_url]', _form).val());
 	if(!url){ $Core.alert.error('Vui lòng dán link Google Sheet.'); return false; }
+	var pass = $.trim($('input[name=default_pass]', _form).val());
+	if(!pass){ $Core.alert.error('Vui lòng nhập mật khẩu mặc định cho tài khoản mới.'); return false; }
 	vietiso_loading(1);
 	$.post(path_ajax_script+'/index.php?mod='+mod+'&act=read_import', _form.serialize(), function(resp){
 		vietiso_loading(0);
