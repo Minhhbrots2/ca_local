@@ -2044,6 +2044,7 @@ function dashboard_load_department_billing(){
 	$clsBillingSale = new BillingSale();
 	###
 	$more = array();
+	$html = '';
 	$uid = $clsISO->getUniqid();
 	$disp = Input::post('disp', "chart");
 	$tp = Input::get('tp', 'department');
@@ -2053,6 +2054,13 @@ function dashboard_load_department_billing(){
 	// AND `{$clsProperty->pkey}`<>'"._DEPARTMENT_DEVELOP_ID."'", $pro_field);	
 	$tmp = $list_departments = array();
 	$clsProperty->makeList(_DEPARTMENT_SALE_ID, "_DEPARTMENT", $tmp);
+	$root_field = "{$clsProperty->pkey},`title`,`more_information`,`parent_id`";
+	$root_cond = "`is_trash`=0 AND `property_type`='_DEPARTMENT'";
+	$root_cond.= sprintf(" AND `%s`='%d'", $clsProperty->pkey, (int) _DEPARTMENT_SALE_ID);
+	$root_deps = $clsProperty->getAll($root_cond, $root_field);
+	if(!empty($root_deps)){
+		$tmp[(int) _DEPARTMENT_SALE_ID] = $root_deps[0];
+	}
 	if(!empty($tmp)){
 		$arr_profile_cached = $clsProfile->getProfileCached("active");
 		// $clsISO->print_pre($arr_profile_cached); die();

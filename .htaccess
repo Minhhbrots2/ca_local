@@ -33,7 +33,7 @@ SetEnvIf Request_URI "^/admin/" !ws_cache_mid
 	RewriteRule ^.*$ https://%{SERVER_NAME}%{REQUEST_URI} [R,L]
 	RewriteBase /
 	RewriteCond %{HTTP_HOST} ^www\.
-	RewriteRule ^(.*)$ https://skyrealty.c-a.vn/$1 [L,R=301]
+	RewriteRule ^(.*)$ https://tienphatsunrise.c-a.vn/$1 [L,R=301]
 	
 	ErrorDocument 404 /error.iso
 	ErrorDocument 404.html	/error.iso

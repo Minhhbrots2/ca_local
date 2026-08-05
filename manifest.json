@@ -1,27 +1,27 @@
 {
-	"name":"CA - Sky Realty",
-	"short_name":"CA - Sky Realty",
-	"start_url":"https://skyrealty.c-a.vn/",
-	"scope":"https://skyrealty.c-a.vn/",
-	"id":"https://skyrealty.c-a.vn/",
+	"name":"CA - Tiến Phát Sunrise",
+	"short_name":"CA - Tiến Phát Sunrise",
+	"start_url":"https://tienphatsunrise.c-a.vn/",
+	"scope":"https://tienphatsunrise.c-a.vn/",
+	"id":"https://tienphatsunrise.c-a.vn/",
 	"display":"standalone",
 	"orientation": "portrait",
 	"background_color":"#FFFFFF",
 	"theme_color":"#FFFFFF",
 	"icons":[{
-		"src":"https://skyrealty.c-a.vn/apple-touch-icon-57x57.png?1732521948",
+		"src":"https://tienphatsunrise.c-a.vn/apple-touch-icon-57x57.png?1732521948",
 		"sizes":"57x57"
 	},{
-		"src":"https://skyrealty.c-a.vn/apple-touch-icon-72x72.png?1732521948",
+		"src":"https://tienphatsunrise.c-a.vn/apple-touch-icon-72x72.png?1732521948",
 		"sizes":"72x72"
 	},{
-		"src":"https://skyrealty.c-a.vn/apple-touch-icon-114x114.png?1732521948",
+		"src":"https://tienphatsunrise.c-a.vn/apple-touch-icon-114x114.png?1732521948",
 		"sizes":"114x114"
 	},{
-		"src":"https://skyrealty.c-a.vn/apple-touch-icon-144x144.png?1732521948",
+		"src":"https://tienphatsunrise.c-a.vn/apple-touch-icon-144x144.png?1732521948",
 		"sizes":"144x144"
 	},{
-		"src":"https://skyrealty.c-a.vn/apple-touch-icon-256x256.png?1732521948",
+		"src":"https://tienphatsunrise.c-a.vn/apple-touch-icon-256x256.png?1732521948",
 		"sizes":"256x256"
 	}]
 }
