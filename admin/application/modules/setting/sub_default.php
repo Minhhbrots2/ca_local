@@ -1334,47 +1334,15 @@ function default_sendmail_test(){
 	echo $status.'|||'.$msg;
 	die();
 }
-function default_profile(){
-	global $assign_list,$core,$clsConfiguration,$dbconn,$clsISO;
-	#
-	$clsProfile = new Profile();
-	$clsProperty = new Property();
-	$assign_list["clsProperty"] = $clsProperty;
-	$lstAdmin = $clsProfile->getAll("`is_trash`=0 AND `status_id` = '"._STATUS_STAFF_ON_ID."' AND (`role_id`='"._ROLE_STAFF_ADMIN."' OR `role_id`='"._ROLE_STAFF_LEADER_ADMIN."')");
-//	$lstAdmin = $clsProfile->getAll("`is_trash`=0 AND `status_id` = '"._STATUS_STAFF_ON_ID."'");
-	$assign_list["lstAdmin"] = $lstAdmin;
-	if(isset($_POST['submit']) && $_POST['submit'] == 'CompanyProfile'){
-		$data = array();
-		foreach($_POST as $key => $val){
-			$tmp = explode('-', $key);
-			if($tmp[0] != 'iso' || !isset($tmp[1])){
-				continue;
-			}
-			if(is_array($val)){
-				$data[$tmp[1]] = json_encode($val, JSON_UNESCAPED_UNICODE);
-			} else if(config_profile_is_size_key($tmp[1])){
-				$data[$tmp[1]] = (string) max(0, (int) $val);
-			} else {
-				$data[$tmp[1]] = $val;
-			}
-		}
-		$clsConfiguration->saveBatch($data, (int) $core->_USER['user_id']);
-		header('location:'.PCMS_URL.'?mod=setting&act=profile&message=updateSuccess');
-		exit();
-	}
-}
 /**
- * Key này có phải kích thước ảnh (<key>_width / <key>_height) không.
- * Dùng chung hậu tố với ConfigDeclaration để 2 màn cấu hình đọc ghi cùng 1 key.
+ * Màn "Thông tin công ty" đã gộp hẳn vào Cấu hình hệ thống — nhóm brand/company/
+ * social trong ConfigDeclaration, cùng key nên dữ liệu giữ nguyên.
+ * Giữ lại act này chỉ để chuyển hướng: nút vào màn cũ nằm trong bảng adminbutton
+ * chứ không nằm trong code, xoá hàm là link đó 404.
  */
-function config_profile_is_size_key($keyword){
-	$suffixes = array(ConfigDeclaration::WIDTH_SUFFIX, ConfigDeclaration::HEIGHT_SUFFIX);
-	foreach($suffixes as $suffix){
-		if(substr($keyword, -strlen($suffix)) === $suffix){
-			return true;
-		}
-	}
-	return false;
+function default_profile(){
+	header('Location:'.PCMS_URL.'?mod=setting&act=general#cfg-company');
+	exit();
 }
 function default_permission(){
 	global $assign_list,$core,$clsConfiguration,$dbconn;

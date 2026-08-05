@@ -387,6 +387,137 @@ class ConfigDeclaration {
 					)
 				)
 			),
+			/** Gộp từ màn "Thông tin công ty" cũ (act=profile, nay chỉ còn redirect).
+			    Key giữ y hệt bản cũ nên dữ liệu đang chạy dùng lại được, không migrate. */
+			'brand' => array(
+				'label'       => 'Nhận diện thương hiệu',
+				'description' => 'Slogan, tên thương hiệu và màu chủ đạo dùng chung cho toàn hệ thống.',
+				'slug'        => 'brand',
+				'icon'        => 'star',
+				'value'       => array(
+					'slogan' => array(
+						'type'        => 'text',
+						'label'       => 'Slogan',
+						'placeholder' => 'Nhập slogan công ty'
+					),
+					'checkin_brand_name' => array(
+						'type'        => 'text',
+						'label'       => 'Tên thương hiệu Check-in',
+						'placeholder' => 'Vd: Future Way',
+						'help'        => 'Bỏ trống thì dùng tên mặc định của hệ thống.'
+					),
+					'BrandColor' => array(
+						'type'    => 'color',
+						'label'   => 'Màu thương hiệu',
+						'default' => '#696cff'
+					)
+				)
+			),
+			'company' => array(
+				'label'       => 'Thông tin công ty',
+				'description' => 'Tên, địa chỉ và đầu mối liên hệ in ra ở chân trang, email và các biểu mẫu.',
+				'slug'        => 'company',
+				'icon'        => 'building-o',
+				'value'       => array(
+					'CompanyName' => array(
+						'type'        => 'text',
+						'label'       => 'Tên công ty đầy đủ',
+						'placeholder' => 'Nhập tên đầy đủ trên giấy phép'
+					),
+					'CompanyNameBrief' => array(
+						'type'        => 'text',
+						'label'       => 'Tên công ty viết tắt',
+						'placeholder' => 'Nhập tên viết tắt'
+					),
+					'CompanyAddress1' => array(
+						'type'        => 'text',
+						'label'       => 'Địa chỉ trụ sở',
+						'placeholder' => 'Nhập địa chỉ trụ sở chính'
+					),
+					'CompanyAddress' => array(
+						'type'        => 'text',
+						'label'       => 'Địa chỉ 2',
+						'placeholder' => 'Nhập địa chỉ chi nhánh/văn phòng khác'
+					),
+					'CompanyPhone' => array(
+						'type'        => 'text',
+						'label'       => 'Điện thoại',
+						'placeholder' => 'Nhập số điện thoại'
+					),
+					'CompanyFax' => array(
+						'type'        => 'text',
+						'label'       => 'Fax',
+						'placeholder' => 'Nhập số fax'
+					),
+					'CompanyHotline' => array(
+						'type'        => 'text',
+						'label'       => 'Hotline',
+						'placeholder' => 'Nhập số hotline'
+					),
+					'CompanyEmail' => array(
+						'type'        => 'text',
+						'label'       => 'Email liên hệ',
+						'placeholder' => 'Nhập email chính'
+					),
+					'CompanyWebsite' => array(
+						'type'        => 'text',
+						'label'       => 'Website chính thức',
+						'placeholder' => 'https://'
+					),
+					'Copyright' => array(
+						'type'        => 'text',
+						'label'       => 'Dòng bản quyền',
+						'placeholder' => 'Nhập dòng bản quyền cuối trang'
+					),
+					/** Toạ độ để ô text chứ không phải number: giá trị có dấu chấm thập phân
+					    và độ dài vượt giới hạn số nguyên. */
+					'CompanyMapLa' => array(
+						'type'        => 'text',
+						'label'       => 'Vĩ độ (latitude)',
+						'placeholder' => 'Vd: 20.988668210459167',
+						'help'        => 'Lấy từ Google Maps: chuột phải vào vị trí → toạ độ là cặp số hiện ra, số đầu là vĩ độ.'
+					),
+					'CompanyMapLo' => array(
+						'type'        => 'text',
+						'label'       => 'Kinh độ (longitude)',
+						'placeholder' => 'Vd: 105.86727258378903',
+						'help'        => 'Số thứ hai trong cặp toạ độ Google Maps.'
+					)
+				)
+			),
+			'social' => array(
+				'label'       => 'Mạng xã hội',
+				'description' => 'Link trang mạng xã hội của công ty. Bỏ trống ô nào thì không hiện icon đó.',
+				'slug'        => 'social',
+				'icon'        => 'share-alt',
+				'value'       => array(
+					'SiteFacebookLink' => array(
+						'type'        => 'text',
+						'label'       => 'Facebook',
+						'placeholder' => 'https://facebook.com/...'
+					),
+					'SiteTwitterLink' => array(
+						'type'        => 'text',
+						'label'       => 'Twitter',
+						'placeholder' => 'https://twitter.com/...'
+					),
+					'SiteGoogleLink' => array(
+						'type'        => 'text',
+						'label'       => 'Google+',
+						'placeholder' => 'https://plus.google.com/...'
+					),
+					'SiteLikedinLink' => array(
+						'type'        => 'text',
+						'label'       => 'LinkedIn',
+						'placeholder' => 'https://linkedin.com/...'
+					),
+					'SitePrintestLink' => array(
+						'type'        => 'text',
+						'label'       => 'Pinterest',
+						'placeholder' => 'https://pinterest.com/...'
+					)
+				)
+			),
 			'target' => array(
 				'label'       => 'Cấu hình mục tiêu',
 				'description' => 'Cấu hình điểm số cá nhân và toàn công ty.',
@@ -534,11 +665,11 @@ class ConfigDeclaration {
 					)
 				)
 			),
-			/** Thư mục ảnh của các khối trang chủ. Bỏ trống thì Share::getFolderId()
-			    lùi về hằng số GOOGLE_DRIVE_FOLDER_*_ID trong config.php. */
+			/** Thư mục ảnh của các khối trang chủ — nguồn duy nhất, không còn hằng số
+			    dự phòng trong config.php: bỏ trống là khối đó không hiện ảnh nào. */
 			'gdrive' => array(
 				'label'       => 'Thư mục Google Drive',
-				'description' => 'Thư mục chứa ảnh cho các khối ngoài trang chủ. Dán ID hoặc nguyên link thư mục Drive. Thư mục phải được chia sẻ cho tài khoản Drive của hệ thống, nếu không khối sẽ trống. Bỏ trống ô nào thì khối đó dùng thư mục mặc định của hệ thống.',
+				'description' => 'Thư mục chứa ảnh cho các khối ngoài trang chủ. Dán ID hoặc nguyên link thư mục Drive. Thư mục phải được chia sẻ cho tài khoản Drive của hệ thống, nếu không khối sẽ trống. Bỏ trống ô nào thì khối đó không hiển thị ảnh.',
 				'slug'        => 'gdrive',
 				'icon'        => 'folder-open',
 				'value'       => array(

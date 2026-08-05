@@ -97,6 +97,7 @@
 				</div>
 			</div>
 			<div class="card-body">
+				{if !empty($list_images)}
 				<div id="home_{$_oKey}" class="owl_honor owl-carousel">
 					{assign var=number_image value=1}
 					{foreach name=i from=$list_images item = _oImage}
@@ -109,6 +110,14 @@
 						{/if}
 					{/foreach}
 				</div>
+				{else}
+				{* Chưa cấu hình thư mục Drive hoặc thư mục rỗng — dùng empty state chung .dbx-empty (sky-theme.css). *}
+				<div class="dbx-empty">
+					<span class="dbx-empty__ic"><i class="bx {$_oBox.icon|escape}"></i></span>
+					<div class="dbx-empty__t">{$_oBox.empty|escape}</div>
+					<div class="dbx-empty__s">Ảnh sẽ hiển thị ở đây khi có cập nhật</div>
+				</div>
+				{/if}
 			</div>
 		</div>		
 	</div>

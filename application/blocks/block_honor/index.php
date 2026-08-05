@@ -162,6 +162,10 @@
 
 			'link' => '',
 
+			'icon' => 'bx-cake',
+
+			'empty' => 'Chưa có thiệp sinh nhật nào',
+
 			'images' => $clsShare->getIMG('birthday')
 
 		);
@@ -171,6 +175,10 @@
 			'title' => 'Chào đón thành viên mới',
 
 			'link' => '',
+
+			'icon' => 'bx-user-plus',
+
+			'empty' => 'Chưa có ảnh thành viên mới',
 
 			'images' => $clsShare->getIMG('wellcome')
 

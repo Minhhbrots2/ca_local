@@ -40,8 +40,7 @@
 							<div class="card mb-0 p-3 h-100 d-flex justify-content-center">
 								<div class="card-header pb-1">
 									<div class="card-title text-center">
-										<img src="{$header_configs.HeaderLogo}" 
-										width="80px" alt="{$PAGE_NAME}" />
+										<img src="{$clsConfiguration->getValue('HeaderLogo')}" width="{$clsConfiguration->getImageWidth('HeaderLogo')}" height="{$clsConfiguration->getImageHeight('HeaderLogo')}" alt="{$header_configs.CompanyName}" />
 									</div>
 								</div>
 								<div class="card-content">

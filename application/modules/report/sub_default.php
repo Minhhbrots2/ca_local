@@ -785,7 +785,8 @@ function default_sale_month(){
 }
 function default_load_report_sale_month(){
 	global $smarty,$assign_list,$_CONFIG,$core,$dbconn,$mod,$act,$_LANG_ID,$title_page
-	,$description_page,$keyword_page,$extLang,$clsISO,$clsProfile,$deviceType;
+	,$description_page,$keyword_page,$extLang,$clsISO,$clsProfile,$deviceType,$header_configs;
+	$clsConfiguration = Configuration::getInstance();
 	$clsStock = new Stock();
 	$clsBilling = new Billing();
 	$clsProperty = new Property();
@@ -817,7 +818,7 @@ function default_load_report_sale_month(){
 	<thead><tr>
 		<th class="p_header text-center text-upper" colspan="16">
 			<div class="mb-2">
-				<img class="w-px-50" src="'.URL_IMAGES.'/logo-f.png" alt="'.PAGE_NAME.'">
+				<img class="w-px-50" src="'.$clsConfiguration->getValue('LogoWhite').'" width="'.$clsConfiguration->getImageWidth('LogoWhite').'" height="'.$clsConfiguration->getImageHeight('LogoWhite').'" alt="'.htmlspecialchars($header_configs['CompanyName'], ENT_QUOTES).'" />
 			</div>
 			<strong>Bảng tổng hợp cá nhân '.$curr_year.'</strong><br>
 			(01/01/'.$curr_year.'-31/12/'.$curr_year.')

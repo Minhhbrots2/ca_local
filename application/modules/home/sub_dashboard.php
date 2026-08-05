@@ -2343,7 +2343,7 @@ function dashboard_load_department_billing(){
 			$cls_rank = ($deviceType == 'phone') ? "" : "mr-2";
 			foreach($arr_departments as $okey => $oval){
 				$stt = $ii;
-				if($ii == 1) $stt = '<img class="w-px-25" src="'.URL_IMAGES.'/top-1.png">';
+				if($ii == 1) $stt = '<img class="w-px-25" style="    filter: drop-shadow(1px 1px 3px black);" src="'.URL_IMAGES.'/top-1.png">';
 				if($ii == 2) $stt = '<img class="w-px-25" src="'.URL_IMAGES.'/top-2f.png">';
 				if($ii == 3) $stt = '<img class="w-px-25" src="'.URL_IMAGES.'/top-3f.png">';
 				$department_id = $oval[$clsProperty->pkey];

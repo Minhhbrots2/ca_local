@@ -230,15 +230,16 @@ class Share extends dbBasic {
 		return $resultArray;
 	}
 	/**
-	 * ID thư mục Drive của 1 khối. Ưu tiên giá trị admin nhập ở "Cấu hình hệ thống",
-	 * bỏ trống thì lùi về hằng số trong config.php để site không gãy khi chưa ai cấu hình.
+	 * ID thư mục Drive của 1 khối, lấy từ "Cấu hình hệ thống".
+	 * Không còn hằng số dự phòng: chưa cấu hình thì trả rỗng và getIMG() bỏ qua khối,
+	 * để admin đổi thư mục ở đúng một chỗ và không bị hằng số cũ che mất.
 	 * @return string
 	 */
-	function getFolderId($block, $def=''){
+	function getFolderId($block){
 		$value = Configuration::getInstance()->getValue('gdrive_folder_'.$block, '');
 		$value = trim($value);
 		if($value === ''){
-			return $def;
+			return '';
 		}
 		return $this->parseFolderId($value);
 	}
@@ -324,10 +325,10 @@ class Share extends dbBasic {
 			$folder_id = GOOGLE_DRIVE_FOLDER_HONOR_ID;
 		} else if($block=='birthday'){
 			$file_name = 'birthday-cached.json';
-			$folder_id = $this->getFolderId('birthday', GOOGLE_DRIVE_FOLDER_BIRTHDAY_ID);
+			$folder_id = $this->getFolderId('birthday');
 		} else if($block=='wellcome'){
 			$file_name = 'wellcome-cached.json';
-			$folder_id = $this->getFolderId('wellcome', GOOGLE_DRIVE_FOLDER_WELLCOME_ID);
+			$folder_id = $this->getFolderId('wellcome');
 		} else {
 			return [];
 		}
