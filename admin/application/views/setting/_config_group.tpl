@@ -34,7 +34,8 @@
 
 			{include file="./fields/`$_oField.type`.tpl" keyword=$keyword val=$_oField current=$_oField.current width=$_oField.current_width height=$_oField.current_height}
 
-			{if !empty($_oField.help)}<span class="setting-general__field-help">{$_oField.help|escape}</span>{/if}
+			{* help_display do ConfigDeclaration escape/lọc sẵn — KHÔNG |escape lại, sẽ hiện ra thẻ. *}
+			{if !empty($_oField.help_display)}<span class="setting-general__field-help">{$_oField.help_display}</span>{/if}
 
 			{if !empty($_oField.attention)}<span class="setting-general__field-help setting-general__field-help--warn">{$_oField.attention|escape}</span>{/if}
 

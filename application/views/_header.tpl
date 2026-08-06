@@ -2,13 +2,13 @@
 {$core->getBlock('menu')}
 <!-- / Menu -->
 <!-- Layout container -->
-<div class="layout-page bg_sold {if !empty($stock_bg_sold) && $stock_bg_sold eq 'dark'}dark{/if}" >
+<div class="layout-page bg_sold {if !empty($stock_bg_sold) && $stock_bg_sold eq 'dark'}dark{/if}" {if $deviceType eq 'phone'} style="background: url({$clsConfiguration->getValue('BgHomeMobile')}); background-size:contain;" {/if}>
 	{if $deviceType eq 'phone' && $mod eq 'home' && $sub eq 'default' && $act eq 'default'}
 	<div class="header-mobile h-auto layout-navbar p-0">
 		<div class="container-xxl d-flex align-items-center flex-grow-1 justify-content-between py-3">
 			<div class="logo">
 				<a href="{$PCMS_URL}">
-					<img class="img-fluid w-auto h-px-40" src="/images/company/Logo-Skyreaty-CA-White.png" width="160">
+					<img width="{$clsConfiguration->getImageWidth('LogoWhite')}" height="{$clsConfiguration->getImageHeight('LogoWhite')}" class="sky-brand-logo" src="{$clsConfiguration->getValue('LogoWhite')}" alt="{$clsConfiguration->getValue('checkin_brand_name')}" />
 				</a>
 			</div>
 			<div class="d-flex align-items-center gap-2">
@@ -76,7 +76,7 @@
 			<!-- /Search --> 
 			<ul class="navbar-nav flex-row align-items-center ms-auto">
 				<li>
-					<a data-bs-toggle="modal" data-bs-target="#online-modal"
+					<a{if $is_full_permis eq '1'} data-bs-toggle="modal" data-bs-target="#online-modal"{/if} 
 						class="cursor-pointer text-dark badge fw-semibold text-fs-8 p-2 d-flex align-items-center gap-1 bg-gray-100">
 						<div class="spinner-grow text-success me-1"></div>
 						<span class="total_online">0</span>

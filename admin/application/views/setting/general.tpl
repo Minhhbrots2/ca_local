@@ -135,6 +135,45 @@
 			}
 		});
 
+		/* Ô xem trước chỉ 40px, không đủ soi logo hay ảnh nền → bấm vào xem cỡ thật.
+		   Tự dựng lớp phủ vì admin không nạp fancybox/lightbox nào. */
+		var $lightbox = null;
+
+		function closeLightbox(){
+			if(!$lightbox){
+				return;
+			}
+			$lightbox.remove();
+			$lightbox = null;
+		}
+
+		function openLightbox(_src, _alt){
+			closeLightbox();
+			$lightbox = $('<div class="cfg-lightbox"><button type="button" class="cfg-lightbox__close" aria-label="Đóng">&times;</button><img class="cfg-lightbox__img" alt="" /></div>');
+			$lightbox.find('.cfg-lightbox__img').attr('src', _src).attr('alt', _alt || '');
+			$lightbox.appendTo(document.body);
+		}
+
+		$groups.on('click', '.cfg-imgfield .isoman_img_pop', function(){
+			/* .src (thuộc tính DOM) chứ không phải attr: onerror có thể đã đổi sang
+			   ảnh trống, lấy attr sẽ mở đúng cái đường dẫn vừa hỏng. */
+			openLightbox(this.src, $(this).attr('alt'));
+		});
+
+		/* Bấm nền hoặc nút đóng thì thoát; bấm đúng tấm ảnh thì giữ nguyên. */
+		$(document).on('click', '.cfg-lightbox', function(e){
+			if($(e.target).hasClass('cfg-lightbox__img')){
+				return;
+			}
+			closeLightbox();
+		});
+
+		$(document).on('keydown', function(e){
+			if(e.which === 27){
+				closeLightbox();
+			}
+		});
+
 		/* Bỏ dấu tiếng Việt để gõ "ngan hang" vẫn tìm ra "Tên ngân hàng". */
 		function plainText(_text){
 			var _value = (_text === undefined || _text === null) ? '' : String(_text);

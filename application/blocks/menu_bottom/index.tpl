@@ -9,7 +9,7 @@
 </a>
 <a href="{$clsISO->getLink('exclusive')}" class="bottom-navbar-item flex-flow d-flex flex-column align-items-center justify-content-center text-main">
 	<div class="icon circle is-effect mb-1" style="background:#E6A400">
-		<img src="/images/company/Logo-Skyreaty-White.png" width="23px" class="h-100 w-100" style="object-fit: contain"/>
+		<img src="{$clsConfiguration->getValue('LogoWhite')}" width="23px" class="h-100 w-100" style="object-fit: contain"/>
 	</div>
 	<span class="fs-12 text-nowrap">Độc quyền</span>
 </a>
@@ -28,7 +28,7 @@
 </a>
 <a href="{$clsISO->getLink('exclusive')}" class="bottom-navbar-item flex-flow d-flex flex-column align-items-center justify-content-center text-main">
 	<div class="icon circle is-effect mb-1" style="background:#E6A400">
-		<img src="/images/company/Logo-Skyreaty-White.png" width="23px" class="h-100 w-100" style="object-fit: contain" />
+		<img src="{$clsConfiguration->getValue('LogoWhite')}" width="23px" class="h-100 w-100" style="object-fit: contain" />
 	</div>
 	<span class="fs-12 text-nowrap">Độc quyền</span>
 </a>
@@ -47,7 +47,7 @@
 </a>
 <a href="{$clsISO->getLink('exclusive')}" class="bottom-navbar-item flex-flow d-flex flex-column align-items-center justify-content-center text-main">
 	<div class="icon circle is-effect mb-1" style="background:#E6A400">
-		<img src="/images/company/Logo-Skyreaty-White.png" width="23px" class="h-100 w-100" style="object-fit: contain" />
+		<img src="{$clsConfiguration->getValue('LogoWhite')}" width="23px" class="h-100 w-100" style="object-fit: contain" />
 	</div>
 	<span class="fs-12 text-nowrap">Độc quyền</span>
 </a>
@@ -66,7 +66,7 @@
 </a>
 <a href="{$clsISO->getLink('exclusive')}" class="bottom-navbar-item flex-flow d-flex flex-column align-items-center justify-content-center text-main">
 	<div class="icon circle is-effect mb-1" style="background:#E6A400">
-		<img src="/images/company/Logo-Skyreaty-White.png" width="23px" class="h-100 w-100" style="object-fit: contain" />
+		<img src="{$clsConfiguration->getValue('LogoWhite')}" width="23px" class="h-100 w-100" style="object-fit: contain" />
 	</div>
 	<span class="fs-12 text-nowrap">Độc quyền</span>
 </a>
@@ -85,7 +85,7 @@
 </a>
 <a href="{$clsISO->getLink('exclusive')}" class="bottom-navbar-item flex-flow d-flex flex-column align-items-center justify-content-center text-main">
 	<div class="icon circle is-effect mb-1" style="background:#E6A400">
-		<img src="/images/company/Logo-Skyreaty-White.png" width="23px" class="h-100 w-100" style="object-fit: contain"/>
+		<img src="{$clsConfiguration->getValue('LogoWhite')}" width="23px" class="h-100 w-100" style="object-fit: contain"/>
 	</div>
 	<span class="fs-12 text-nowrap">Độc quyền</span>
 </a>

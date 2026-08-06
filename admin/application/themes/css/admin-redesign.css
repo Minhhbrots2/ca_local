@@ -2295,7 +2295,48 @@ body.mod-setting .cfg-imgfield .isoman_img_pop {
   border-radius: var(--fh-radius-sm);
   background: var(--fh-bg);
   padding: 2px;
+  cursor: zoom-in;
 }
+/* Xem ảnh cỡ thật: ô xem trước chỉ 40px, không đủ soi logo hay ảnh nền.
+   Lớp phủ nằm thẳng dưới <body> nên KHÔNG khoá trong body.mod-setting. */
+.cfg-lightbox {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: rgba(0, 0, 0, .78);
+  cursor: zoom-out;
+}
+.cfg-lightbox__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: var(--fh-radius-sm);
+  /* Nền trắng để ảnh PNG trong suốt (logo, favicon) không lẫn vào lớp phủ đen. */
+  background: #fff;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, .45);
+}
+.cfg-lightbox__close {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .18);
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.cfg-lightbox__close:hover { background: rgba(255, 255, 255, .32); }
 body.mod-setting .cfg-pick {
   flex: 0 0 auto;
   display: inline-flex;

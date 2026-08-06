@@ -10,6 +10,7 @@
 
 </label>
 
-{if !empty($val.help)}<span class="setting-general__field-help">{$val.help|escape}</span>{/if}
+{* help_display do ConfigDeclaration escape/lọc sẵn — KHÔNG |escape lại, sẽ hiện ra thẻ. *}
+{if !empty($val.help_display)}<span class="setting-general__field-help">{$val.help_display}</span>{/if}
 
 {if !empty($val.attention)}<span class="setting-general__field-help setting-general__field-help--warn">{$val.attention|escape}</span>{/if}
